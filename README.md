@@ -188,7 +188,7 @@ See full 45-second script and visuals in [pitch_deck_and_demo.md](pitch_deck_and
 - `docs/agent_contract.md` — Complete agent API contract + Foundry mapping
 - `docs/architecture_diagram.md` — Required architecture diagram for submission
 - `docs/openapi.json` — OpenAPI spec for custom tool registration
-- `project code base/core/architecture_intelligence.py` — Clean orchestrator for agent tools
+- `aura/core/architecture_intelligence.py` — Clean orchestrator for agent tools
 - `server.py` — All endpoints (including the four new agent contract routes)
 
 ---
@@ -208,3 +208,34 @@ For the full submission package, see:
 - [docs/architecture_diagram.md](docs/architecture_diagram.md)
 - [docs/agent_contract.md](docs/agent_contract.md)
 - The `integration/` folder
+
+---
+
+## Development & Testing
+
+```bash
+# Install dev dependencies (includes pytest)
+pip install -r requirements.txt
+
+# Run the test suite
+python -m pytest tests/ -q
+
+# Or with verbose output
+python -m pytest tests/ -v
+```
+
+We maintain a growing suite of tests for the core reasoning engines (intent mapping, risk detection, evidence/companion discovery, workspace scanning, and the main ArchitectureIntelligence orchestrator).
+
+Current status (as of latest run):
+- **17 tests passing (100%)**
+- All tests run exclusively on **real data**: a small but complete real Python application (`tests/fixtures/mini_real_app/`) with actual cross-file imports, real function/class counts, and a genuine git history (multiple real commits with overlapping file changes).
+- The full pipeline (WorkspaceScanner → real AST static matrix → real Chronos temporal coupling from git log → EvidenceEngine → RiskEngine → SubsystemEngine → ArchitectureIntelligence) is exercised with zero mock or synthetic data.
+- This directly validates the zero-fabrication policy and produces real architectural risks, companion edits, intent targets, and ownership results.
+
+Run with:
+```bash
+python -m pytest tests/ -q
+```
+
+See `tests/` for the current test modules and `tests/fixtures/mini_real_app/` for the real codebase used as the test subject.
+

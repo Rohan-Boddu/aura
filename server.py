@@ -7,8 +7,8 @@ import threading
 import time
 from flask import Flask, request, jsonify, send_from_directory
 
-# Add project code base directory to path so we can import engines
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'project code base'))
+# Add aura/ directory (core engines) to path
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'aura'))
 
 from workspace_scanner import WorkspaceScanner, ProjectScanResult
 from aura_engine import generate_architecture_explanation, generate_plan_markdown

@@ -1,12 +1,13 @@
-# Byte-compiled / optimized / DLL files
+# =============================================
+# AURA 4.0 / WhatIf AI - Hackathon Project
+# .gitignore
+# =============================================
+
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -20,47 +21,116 @@ parts/
 sdist/
 var/
 wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
 
-# PyInstaller
-*.manifest
-*.spec
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-
-# Environments
-.env
-.venv
+# Virtual environments
+.venv/
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+.conda/
 
-# IDE
-.vscode/
+# IDE / Editors
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
+.project
+.pydevproject
+.settings/
 
-# OS
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+Desktop.ini
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.cache
+
+# Generated runtime / demo artifacts (this project specific)
+simulation_data.js
+blast_radius_payload.json
+ast_static_matrix.json
+chronos_git_matrix.json
+*.js.map
+
+# Azure / Secrets / Credentials
+.env
+.env.*
+*.env
+azure_connection_string.txt
+connection_string.txt
+*.pem
+*.key
+secrets/
+credentials/
+
+# Azure AI Projects / Foundry
+AZURE_AIPROJECTS_CONNECTION_STRING
+*.azureml
+*.mlconfig
+
+# Hackathon submission / personal notes
+HACKATHON_NOTES.txt
+personal/
+D:/
+C:/
+
+# Large binaries or generated images (if any)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.mov
+!logo/*.png
+!docs/*.png   # allow only intentional submission diagrams
+
+# Node / frontend if any
+node_modules/
+npm-debug.log*
+
+# Misc
+*.zip
+*.tar.gz
+*.rar
+
+# Windows specific
+*.exe
+*.dll
+*.msi
+*.lnk
+
+# Presentation and speech scripts (record voiceover and screen separately - do not commit)
+AURA_Presentation_Video_Script.txt
+presentation_script.txt
+speech_*.txt
+*.speech.txt
+video_script.txt
+scripts/*.txt
+
+# Web automation / video recording tools and outputs
+# The source code for automation is committed, but generated recordings are not.
+web_automation/recordings/
+web_automation/*.mp4
+web_automation/*.mov
+web_automation/*.avi
+web_automation/*.webm
+web_automation/*.log
+web_automation/outputs/
+web_automation/recordings/

@@ -1,0 +1,14 @@
+# AURA 4.0 — Core server
+flask>=2.3
+requests>=2.31
+
+# Azure AI Foundry integration (for hackathon demo + Reasoning Agents track)
+azure-ai-projects>=1.0.0b1
+azure-identity>=1.16.0
+
+# Semantic Kernel plugin (optional)
+semantic-kernel>=1.4.0
+
+# Testing (dev)
+pytest>=7.4
+pytest-cov>=4.1
