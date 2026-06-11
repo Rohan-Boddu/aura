@@ -1,0 +1,2051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA - AI Software Architect Console</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        neonRed: '#F7768E',
+                        neonAmber: '#FF8C00',
+                        neonGreen: '#107C41',
+                        neonBlue: '#0078D4',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        :root {
+            --theme-bg: #F3F2F1;
+            --theme-header-bg: #FFFFFF;
+            --theme-header-border: #D2D0CE;
+            --theme-card-bg: #FFFFFF;
+            --theme-border: #D2D0CE;
+            --theme-border-glow: rgba(0, 0, 0, 0.05);
+            --theme-text-primary: #201F1E;
+            --theme-text-secondary: #605E5C;
+            --theme-grid-color: #E1DFDD;
+            --theme-log-bg: #F3F2F1;
+            --theme-banner-bg: #EFF6FC;
+            --theme-banner-border: #A8B7C7;
+            --theme-banner-text: #0078D4;
+            --theme-node-fill: #FFFFFF;
+            --theme-canvas-gradient: radial-gradient(circle at 50% 0%, #FFFFFF 0%, #F3F2F1 100%);
+            --theme-orb-shadow: 0 0 10px rgba(0, 120, 212, 0.2);
+            --theme-shadow-dial: #E1DFDD;
+            --theme-right-bg: #FFFFFF;
+            --theme-tooltip-bg: #FFFFFF;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background: var(--theme-canvas-gradient);
+            color: var(--theme-text-primary);
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        .mono {
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+        .acrylic-card {
+            background: var(--theme-card-bg);
+            border: 1px solid var(--theme-border);
+            box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.04),
+                        inset 0 1px 1px 0 var(--theme-border-glow);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            transition: background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
+        }
+        .pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+
+        .static-import-line {
+            stroke: #0078D4;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            transition: stroke-width 0.3s ease, stroke-opacity 0.3s ease, stroke 0.3s ease, filter 0.3s ease;
+        }
+
+        .shadow-coupling-line {
+            stroke: #FF8C00;
+            stroke-width: 2;
+            stroke-dasharray: 4 6;
+            animation: pulseTrail 2s linear infinite;
+            transition: stroke-width 0.3s ease, stroke-opacity 0.3s ease, stroke 0.3s ease, filter 0.3s ease;
+        }
+
+        @keyframes pulseTrail {
+            to { stroke-dashoffset: -20; }
+        }
+
+        .fluent-node-target {
+            fill: var(--theme-node-fill);
+            stroke: #F7768E;
+            stroke-width: 3;
+            transition: all 0.3s ease;
+        }
+
+        .fluent-node-static {
+            fill: var(--theme-node-fill);
+            stroke: #0078D4;
+            stroke-width: 2.5;
+            transition: all 0.3s ease;
+        }
+
+        .fluent-node-shadow {
+            fill: var(--theme-node-fill);
+            stroke: #FF8C00;
+            stroke-width: 2.5;
+            transition: all 0.3s ease;
+        }
+
+        .fluent-aura {
+            transition: r 0.25s cubic-bezier(0.4, 0, 0.2, 1), fill-opacity 0.25s ease, filter 0.25s ease;
+        }
+        .fluent-node-static, .fluent-node-shadow {
+            transition: r 0.25s cubic-bezier(0.4, 0, 0.2, 1), stroke-width 0.25s ease;
+        }
+        .fluent-node-target {
+            transition: r 0.25s cubic-bezier(0.4, 0, 0.2, 1), stroke-width 0.25s ease;
+        }
+
+        .fluent-group:hover .fluent-aura {
+            r: 28;
+            fill-opacity: 0.85 !important;
+            filter: blur(5px) brightness(1.1) !important;
+        }
+        .fluent-group:hover .fluent-node-static,
+        .fluent-group:hover .fluent-node-shadow {
+            r: 17;
+            stroke-width: 3.5px;
+        }
+        .fluent-group:hover .fluent-node-target {
+            r: 21;
+            stroke-width: 4px;
+        }
+
+        .dial-bg-track {
+            stroke: var(--theme-shadow-dial);
+            transition: stroke 0.3s ease;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #D2D0CE;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #A8B7C7;
+        }
+
+        /* Force visibility of all panel "?" help icons (the small circles next to titles).
+           Some recent class/overflow changes hid them on panels that now show results. */
+        .flex.items-center.gap-1 span.group,
+        .absolute.top-3.left-4.flex.items-center.gap-1 span.group,
+        div.flex.items-center.gap-1 > span.group {
+            display: inline-flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: relative;
+        }
+        .flex.items-center.gap-1 span.group span,
+        .absolute.top-3.left-4.flex.items-center.gap-1 span.group span,
+        div.flex.items-center.gap-1 > span.group > span {
+            display: inline-block !important;
+            font-weight: bold;
+        }
+
+        /* Fullscreen / Maximised view for the Impact Intelligence Graph */
+        .graph-fullscreen {
+            position: fixed !important;
+            top: 1rem !important;
+            left: 1rem !important;
+            right: 1rem !important;
+            bottom: 1rem !important;
+            z-index: 9999 !important;
+            max-height: none !important;
+            height: calc(100vh - 2rem) !important;
+            width: calc(100vw - 2rem) !important;
+            background-color: var(--theme-right-bg) !important;
+            border: 1px solid var(--theme-border) !important;
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        .graph-fullscreen svg#viewport-canvas {
+            width: 100% !important;
+            height: 100% !important;
+            max-height: calc(100vh - 4rem) !important;
+        }
+
+        .graph-fullscreen .absolute {
+            z-index: 10000 !important;
+        }
+    </style>
+</head>
+<body class="w-full h-screen overflow-hidden flex flex-col p-6">
+
+    <header class="w-full h-14 flex items-center justify-between border-b bg-[var(--theme-header-bg)] border-[var(--theme-header-border)] px-4 mb-4 rounded-lg shadow-sm flex-shrink-0 z-10 transition-all duration-300">
+        <div class="flex items-center gap-3">
+            <button onclick="goBack()" class="bg-[#201F1E] hover:bg-[#323130] text-white py-1.5 px-3 rounded-full text-[11px] font-semibold shadow-sm hover:scale-[1.03] duration-300 transition-all flex items-center gap-2 select-none cursor-pointer border border-[#D2D0CE]">
+                <span class="w-4 h-4 rounded-full border border-white/40 flex items-center justify-center bg-white/10">
+                    <svg class="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                    </svg>
+                </span>
+                <span>New Ingestion</span>
+            </button>
+            <span class="text-xs font-mono bg-black/5 border border-[#D2D0CE] px-2.5 py-1 rounded text-[var(--theme-text-secondary)] transition-all">CONTEXT: AURA REASONING CORE</span>
+            <div class="h-8 flex items-center justify-center font-bold text-[#0078D4] tracking-widest text-sm">
+                AURA
+            </div>
+            <div class="h-4 w-[1px] bg-[#D2D0CE] transition-all"></div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-[var(--theme-text-secondary)] transition-all">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#107C41] pulse-slow shadow-[0_0_6px_#107C41]"></span>
+                AURA_REASONING_NODE: ONLINE
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div id="repo-name-badge" class="px-3 py-1 bg-black/5 border border-[#D2D0CE] rounded text-xs text-[var(--theme-text-secondary)] font-mono transition-all">
+                repo: loading...
+            </div>
+            <div id="simulation-banner" class="px-3 py-1 bg-[#EFF6FC] border border-[#A8B7C7] text-[#0078D4] rounded text-xs font-mono font-semibold transition-all">
+                GOAL: loading...
+            </div>
+            <!-- Visual proof of Microsoft Foundry usage -->
+            <div class="px-3 py-1 bg-[#0078D4] text-white rounded text-[10px] font-bold flex items-center gap-1.5 shadow-sm" title="AURA tools are registered as native FunctionTools for agents created in Azure AI Foundry via azure-ai-projects SDK">
+                <span class="text-xs">☁️</span>
+                <span>Azure AI Foundry</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Split Panels -->
+    <main class="w-full h-[calc(100vh-5.5rem)] flex flex-row gap-6 overflow-hidden flex-shrink-0">
+        
+        <!-- Left Telemetry Panel (35% width, internally scrollable) -->
+        <section class="w-[35%] h-full flex flex-col gap-4 overflow-y-auto pr-2 flex-shrink-0 custom-scrollbar">
+            
+            <!-- Repository Brief Panel -->
+            <div class="acrylic-card rounded-lg p-5 flex flex-col gap-3 relative overflow-visible flex-shrink-0">
+                <div class="flex items-center gap-1">
+                    <span class="text-[10px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider">Repository Brief Panel</span>
+                    <span class="group relative inline-flex items-center justify-center w-3.5 h-3.5 text-[9px] rounded-full border border-slate-400 text-slate-400 cursor-help hover:text-[#0078D4] hover:border-[#0078D4] transition-colors" title="What this is">
+                        <span class="font-bold">?</span>
+                        <div class="absolute left-0 top-full mt-1 hidden group-hover:block z-[9999] pointer-events-auto w-72 bg-white border border-[#D2D0CE] rounded p-3 text-[9px] text-slate-600 shadow-xl">
+                            <strong class="text-slate-800 block mb-1">Repository Brief Panel</strong>
+                            A high-level factual summary extracted directly from the scanned repository using static analysis and manifest files (requirements.txt / package.json).<br><br>
+                            <strong>Shows:</strong> Project Layout (type + scale), Entry Points, real Dependencies (including scoped packages like @anthropic-ai/sdk), and Routing Routes.<br><br>
+                            <strong>Why useful:</strong> Gives you (or an AI agent) an instant, trustworthy overview of the codebase architecture before proposing any changes. Helps quickly assess scope, identify main access points, and understand what libraries are actually in play.
+                        </div>
+                    </span>
+                </div>
+                <div id="repo-summary-loader" class="text-xs text-slate-500 animate-pulse">Running workspace scanner...</div>
+                <div id="repo-summary-content" class="hidden grid grid-cols-2 gap-2.5 text-xs text-slate-600">
+                    <div>
+                        <span class="block text-[10px] text-slate-400 font-bold uppercase">Project Layout</span>
+                        <strong id="summary-layout" class="text-slate-800">-</strong>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-slate-400 font-bold uppercase">Entry Points</span>
+                        <strong id="summary-entry" class="text-slate-800 truncate block">-</strong>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-slate-400 font-bold uppercase">Dependencies</span>
+                        <strong id="summary-deps" class="text-slate-800 truncate block">-</strong>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-slate-400 font-bold uppercase">Routing Routes</span>
+                        <strong id="summary-routes" class="text-slate-800">-</strong>
+                    </div>
+                </div>
+                <!-- Evidence Coverage Panel -->
+                <div id="repo-coverage-panel" class="hidden border-t border-slate-100 pt-2.5 flex flex-col gap-1.5 mt-1 text-[10px]">
+                    <span class="font-bold text-[9px] text-slate-400 uppercase tracking-wider">Evidence Coverage Profile</span>
+                    <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-slate-500 font-mono">
+                        <div class="flex justify-between">
+                            <span>AST:</span> <span id="cov-ast" class="text-slate-800 font-bold">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Deps:</span> <span id="cov-deps" class="text-slate-800 font-bold">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Git:</span> <span id="cov-git" class="text-slate-800 font-bold">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Routes:</span> <span id="cov-routes" class="text-slate-800 font-bold">--</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-baseline border-t border-slate-100 pt-1.5 mt-0.5 text-slate-600 font-bold">
+                        <span>Overall Integrity:</span>
+                        <span id="cov-overall" class="text-[#0078D4] text-xs">--</span>
+                    </div>
+                </div>
+                <!-- Subsystem Inventory -->
+                <div id="brief-subsystem-section" class="hidden border-t border-slate-100 pt-2.5 flex flex-col gap-1.5 mt-1 text-[10px]">
+                    <span class="font-bold text-[9px] text-slate-400 uppercase tracking-wider">Subsystem Inventory</span>
+                    <div id="brief-subsystem-list" class="flex flex-col gap-1.5 max-h-32 overflow-y-auto custom-scrollbar"></div>
+                </div>
+            </div>
+
+            <!-- Azure AI Foundry Integration Visual Proof -->
+            <div class="acrylic-card rounded-lg p-4 flex flex-col gap-2.5 text-xs border border-[#0078D4]/30 bg-[#F0F6FC]">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1">
+                        <span class="text-[10px] font-bold text-[#0078D4] uppercase tracking-wider flex items-center gap-1">
+                            <span>☁️</span> Azure AI Foundry
+                        </span>
+                        <span class="group relative inline-flex items-center justify-center w-3.5 h-3.5 text-[9px] rounded-full border border-[#0078D4]/50 text-[#0078D4] cursor-help hover:bg-[#0078D4] hover:text-white transition-colors" title="What this is">
+                            <span class="font-bold">?</span>
+                            <div class="absolute left-0 top-full mt-1 hidden group-hover:block z-[9999] pointer-events-auto w-72 bg-white border border-[#D2D0CE] rounded p-3 text-[9px] text-slate-600 shadow-xl">
+                                <strong class="text-slate-800 block mb-1">Azure AI Foundry Integration</strong>
+                                This panel proves AURA is built as a specialized tool provider for agents running in Microsoft Azure AI Foundry.<br><br>
+                                Using the official <span class="font-mono">azure-ai-projects</span> SDK, we register four Function Tools (<span class="font-mono">get_agent_context</span>, <span class="font-mono">get_change_impact</span>, etc.) that a real <span class="font-mono">AuraArchitectAgent</span> can call before proposing code edits.<br><br>
+                                <strong>Why useful:</strong> Gives Microsoft Foundry agents (and other AI coding agents) deep, evidence-based repository intelligence and blast-radius safety they currently lack. Directly targets the Reasoning Agents track.
+                            </div>
+                        </span>
+                    </div>
+                    <span class="text-[8px] px-1.5 py-0.5 bg-[#0078D4] text-white rounded font-mono">Tool Provider</span>
+                </div>
+                <div class="text-[10px] text-slate-600">
+                    AURA tools registered as <strong>native FunctionTools</strong> for <span class="font-mono">AuraArchitectAgent</span> via <span class="font-mono">azure-ai-projects</span> SDK.
+                </div>
+                <div class="text-[9px] text-slate-500">
+                    4 tools exposed for Foundry agents:
+                    <span class="font-mono text-[8px]">get_repository_brief • get_agent_context • get_change_impact • get_ownership</span>
+                </div>
+
+                <!-- Live Foundry Tool Call Demo -->
+                <div class="mt-1 border-t border-[#A8B7C7]/40 pt-2">
+                    <span class="block text-[9px] font-semibold text-slate-500 mb-1">Simulate Foundry Agent Tool Call (live response):</span>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button onclick="simulateFoundryToolCall('agent_context')" class="text-[9px] px-2 py-0.5 bg-white border border-[#0078D4]/40 hover:bg-[#EFF6FC] rounded font-mono">get_agent_context</button>
+                        <button onclick="simulateFoundryToolCall('change_impact')" class="text-[9px] px-2 py-0.5 bg-white border border-[#0078D4]/40 hover:bg-[#EFF6FC] rounded font-mono">get_change_impact</button>
+                        <button onclick="simulateFoundryToolCall('ownership')" class="text-[9px] px-2 py-0.5 bg-white border border-[#0078D4]/40 hover:bg-[#EFF6FC] rounded font-mono">get_ownership</button>
+                    </div>
+
+                    <!-- One-click video-ready full agent workflow matching the presentation script -->
+                    <button onclick="runFullAgentDemoSequence()" 
+                            class="mt-2 w-full py-1.5 text-[10px] font-bold bg-[#0078D4] hover:bg-[#005A9E] text-white rounded flex items-center justify-center gap-2">
+                        ▶ Simulate Full Foundry Agent Workflow (Video-Ready)
+                    </button>
+
+                    <div id="foundry-tool-response" class="mt-2 hidden bg-white border border-[#0078D4]/20 rounded p-2 text-[8px] font-mono max-h-32 overflow-auto text-slate-700">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <!-- Live Agent Activity Log (great for video narration) -->
+                    <div id="agent-demo-log" class="mt-2 text-[8px] font-mono bg-black/5 border border-[#D2D0CE] rounded p-1.5 max-h-20 overflow-y-auto hidden">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Health Scores Profile -->
+            <div class="acrylic-card rounded-lg p-5 flex flex-col gap-3.5 relative overflow-hidden flex-shrink-0">
+                <div class="flex items-center gap-1">
+                    <span class="text-[10px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider">Workspace Health Profile</span>
+                    <span class="group relative inline-flex items-center justify-center w-3.5 h-3.5 text-[9px] rounded-full border border-slate-400 text-slate-400 cursor-help hover:text-[#0078D4] hover:border-[#0078D4] transition-colors" title="What this is">
+                        <span class="font-bold">?</span>
+                        <div class="absolute left-0 top-full mt-1 hidden group-hover:block z-[9999] pointer-events-auto w-72 bg-white border border-[#D2D0CE] rounded p-3 text-[9px] text-slate-600 shadow-xl">
+                            <strong class="text-slate-800 block mb-1">Workspace Health Profile</strong>
+                            Quantified, evidence-backed scores (Maintainability, Structural Integrity, Test Density, Documentation) computed from the actual codebase using AST analysis, file metrics, and git co-change history.<br><br>
+                            <strong>Why useful:</strong> Surfaces real technical debt and quality risks with formulas and concrete evidence. Helps you and AI agents prioritize what to fix and justify changes in the Safe Change Plan. Prevents "it looks fine" surprises during refactoring.
+                        </div>
+                    </span>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Maintainability -->
+                    <div class="flex flex-col gap-1 relative group cursor-help">
+                        <span class="text-[11px] text-slate-500 font-semibold">Maintainability</span>
+                        <div class="flex items-baseline gap-1">
+                            <span id="health-maintainability-val" class="text-lg font-bold text-slate-800">--</span>
+                            <span class="text-[9px] text-slate-400 font-mono">/100</span>
+                        </div>
+                        <div class="absolute bottom-full left-0 hidden group-hover:block bg-white border border-[#D2D0CE] p-3 rounded shadow-xl text-[10px] w-64 z-[9999] pointer-events-auto font-mono leading-relaxed">
+                            <strong class="text-slate-800 block">Why this score?</strong>
+                            <span id="health-maintainability-formula" class="text-[#0078D4] block my-1">--</span>
+                            <ul id="health-maintainability-evidence" class="list-disc pl-3 text-slate-500 space-y-0.5">
+                                <!-- evidence list -->
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- Structural Integrity -->
+                    <div class="flex flex-col gap-1 relative group cursor-help">
+                        <span class="text-[11px] text-slate-500 font-semibold">Structural Integrity</span>
+                        <div class="flex items-baseline gap-1">
+                            <span id="health-integrity-val" class="text-lg font-bold text-slate-800">--</span>
+                            <span class="text-[9px] text-slate-400 font-mono">/100</span>
+                        </div>
+                        <div class="absolute bottom-full left-0 hidden group-hover:block bg-white border border-[#D2D0CE] p-3 rounded shadow-xl text-[10px] w-64 z-[9999] pointer-events-auto font-mono leading-relaxed">
+                            <strong class="text-slate-800 block">Why this score?</strong>
+                            <span id="health-integrity-formula" class="text-[#0078D4] block my-1">--</span>
+                            <ul id="health-integrity-evidence" class="list-disc pl-3 text-slate-500 space-y-0.5">
+                                <!-- evidence list -->
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- Test Density -->
+                    <div class="flex flex-col gap-1 relative group cursor-help">
+                        <span class="text-[11px] text-slate-500 font-semibold">Test Density</span>
+                        <div class="flex items-baseline gap-1">
+                            <span id="health-tests-val" class="text-lg font-bold text-slate-800">--</span>
+                            <span class="text-[9px] text-slate-400 font-mono">/100</span>
+                        </div>
+                        <div class="absolute bottom-full left-0 hidden group-hover:block bg-white border border-[#D2D0CE] p-3 rounded shadow-xl text-[10px] w-64 z-[9999] pointer-events-auto font-mono leading-relaxed">
+                            <strong class="text-slate-800 block">Why this score?</strong>
+                            <span id="health-tests-formula" class="text-[#0078D4] block my-1">--</span>
+                            <ul id="health-tests-evidence" class="list-disc pl-3 text-slate-500 space-y-0.5">
+                                <!-- evidence list -->
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- Documentation -->
+                    <div class="flex flex-col gap-1 relative group cursor-help">
+                        <span class="text-[11px] text-slate-500 font-semibold">Documentation</span>
+                        <div class="flex items-baseline gap-1">
+                            <span id="health-docs-val" class="text-lg font-bold text-slate-800">--</span>
+                            <span class="text-[9px] text-slate-400 font-mono">/100</span>
+                        </div>
+                        <div class="absolute bottom-full left-0 hidden group-hover:block bg-white border border-[#D2D0CE] p-3 rounded shadow-xl text-[10px] w-64 z-[9999] pointer-events-auto font-mono leading-relaxed">
+                            <strong class="text-slate-800 block">Why this score?</strong>
+                            <span id="health-docs-formula" class="text-[#0078D4] block my-1">--</span>
+                            <ul id="health-docs-evidence" class="list-disc pl-3 text-slate-500 space-y-0.5">
+                                <!-- evidence list -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Architecture Explainer Block -->
+            <div class="acrylic-card rounded-lg p-5 flex flex-col gap-3 relative overflow-visible flex-shrink-0">
+                <div class="flex items-center gap-1">
+                    <span class="text-[10px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider">Architecture Explainer</span>
+                    <span class="group relative inline-flex items-center justify-center w-3.5 h-3.5 text-[9px] rounded-full border border-slate-400 text-slate-400 cursor-help hover:text-[#0078D4] hover:border-[#0078D4] transition-colors" title="What this is">
+                        <span class="font-bold">?</span>
+                        <div class="absolute left-0 top-full mt-1 hidden group-hover:block z-[9999] pointer-events-auto w-72 bg-white border border-[#D2D0CE] rounded p-3 text-[9px] text-slate-600 shadow-xl">
+                            <strong class="text-slate-800 block mb-1">Architecture Explainer</strong>
+                            A detailed markdown summary of the repository structure, layers, risks, and recommendations generated from the full scan (AST + git + risk engine).<br><br>
+                            <strong>Why useful:</strong> Gives a human-readable "state of the repo" report with cited evidence. Perfect for understanding the current architecture before or after running a counterfactual plan.
+                        </div>
+                    </span>
+                </div>
+                <div id="architecture-explainer-box" class="text-[11px] bg-black/5 border border-[#D2D0CE] p-3.5 rounded leading-relaxed max-h-52 overflow-y-auto custom-scrollbar">
+                    <!-- Explanations loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- Engineering Goal Input Console -->
+            <div class="acrylic-card rounded-lg p-5 flex flex-col gap-3.5 relative overflow-hidden flex-shrink-0">
+                <div class="flex items-center gap-1">
+                    <span class="text-[10px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider">Plan Counterfactual Change</span>
+                    <span class="group relative inline-flex items-center justify-center w-3.5 h-3.5 text-[9px] rounded-full border border-slate-400 text-slate-400 cursor-help hover:text-[#0078D4] hover:border-[#0078D4] transition-colors" title="What this is">
+                        <span class="font-bold">?</span>
+                        <div class="absolute left-0 top-full mt-1 hidden group-hover:block z-[9999] pointer-events-auto w-72 bg-white border border-[#D2D0CE] rounded p-3 text-[9px] text-slate-600 shadow-xl">
+                            <strong class="text-slate-800 block mb-1">Plan Counterfactual Change</strong>
+                            The input area where you enter a hypothetical change (e.g. "Add JWT authentication"). Clicking PLAN or a chip triggers the full counterfactual analysis: intent mapping, blast radius, risks, and a safe change plan.<br><br>
+                            <strong>Why useful:</strong> This is the main way to ask "what if" and see the real impact before touching code. The results (timeline, graph, plan) appear based on actual repo data.
+                        </div>
+                    </span>
+                </div>
+                <div class="flex items-center gap-2 bg-black/5 border border-[#D2D0CE] rounded px-3 py-2 transition-all focus-within:border-[#0078D4] focus-within:bg-transparent">
+                    <span class="text-[#0078D4] font-bold font-mono">$</span>
+                    <input type="text" id="query-input" placeholder="e.g. Add JWT authentication..." 
+                           class="bg-transparent border-none outline-none text-xs text-[var(--theme-text-primary)] w-full placeholder-slate-400 focus:ring-0">
+                    <button id="run-simulation-btn" onclick="submitGoal()" class="bg-gradient-to-r from-[#0078D4] to-purple-600 text-white px-4 py-2 rounded-md text-[10px] uppercase font-extrabold tracking-[0.2em] shadow-[0_4px_12px_rgba(0,120,212,0.25)] hover:shadow-[0_6px_20px_rgba(0,120,212,0.4)] hover:scale-[1.03] duration-300 transition-all flex-shrink-0 outline-none border-none">
+                        PLAN
+                    </button>
+                </div>
+                <!-- Interactive chips -->
+                <div class="flex flex-wrap gap-1.5 mt-1">
+                    <button onclick="applyChip('Add JWT authentication')" class="text-[9px] font-semibold bg-white hover:bg-slate-50 border border-[#D2D0CE] px-3 py-1 rounded-full shadow-sm hover:scale-[1.03] duration-200 transition-all text-[var(--theme-text-secondary)] flex items-center gap-1.5 cursor-pointer">
+                        <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                        <span>Add JWT Authentication</span>
+                    </button>
+                    <button onclick="applyChip('Replace PostgreSQL with Cosmos DB')" class="text-[9px] font-semibold bg-white hover:bg-slate-50 border border-[#D2D0CE] px-3 py-1 rounded-full shadow-sm hover:scale-[1.03] duration-200 transition-all text-[var(--theme-text-secondary)] flex items-center gap-1.5 cursor-pointer">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        <span>PostgreSQL → Cosmos DB</span>
+                    </button>
+                    <button onclick="applyChip('Remove Redis')" class="text-[9px] font-semibold bg-white hover:bg-slate-50 border border-[#D2D0CE] px-3 py-1 rounded-full shadow-sm hover:scale-[1.03] duration-200 transition-all text-[var(--theme-text-secondary)] flex items-center gap-1.5 cursor-pointer">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                        <span>Remove Redis</span>
+                    </button>
+                    <button onclick="applyChip('Split User module into a microservice')" class="text-[9px] font-semibold bg-white hover:bg-slate-50 border border-[#D2D0CE] px-3 py-1 rounded-full shadow-sm hover:scale-[1.03] duration-200 transition-all text-[var(--theme-text-secondary)] flex items-center gap-1.5 cursor-pointer">
+                        <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                        <span>Split User module</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- AURA Reasoning Timeline -->
+            <div class="acrylic-card rounded-lg p-5 flex flex-col gap-3 relative overflow-visible flex-shrink-0">
+                <div class="flex items-center gap-1">
+                    <span class="text-[10px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider">AURA Reasoning Timeline</span>
+                    <span class="group relative inline-flex items-center justify-center w-3.5 h-3.5 text-[9px] rounded-full border border-slate-400 text-slate-400 cursor-help hover:text-[#0078D4] hover:border-[#0078D4] transition-colors">
+                        <span class="font-bold">?</span>
+                        <div class="absolute left-0 top-full mt-1 hidden group-hover:block z-[9999] pointer-events-auto w-72 bg-white border border-[#D2D0CE] rounded p-3 text-[9px] text-slate-600 shadow-xl">
+                            <strong class="text-slate-800 block mb-1">AURA Reasoning Timeline</strong>
+                            A transparent, 9-stage visible reasoning trace that shows exactly how AURA arrived at its recommendation. Each stage includes concrete evidence pulled from the actual repository scan (intent concepts, subsystems, AST coverage, real companion files, citation-backed risks, and verification steps).<br><br>
+                            <strong>Why useful:</strong> Makes the agent's thinking auditable and trustworthy. You (or a Foundry agent) can inspect every inference instead of getting a black-box answer. Directly demonstrates multi-step reasoning for the hackathon track.
+                        </div>
+                    </span>
+                </div>
+                <div id="timeline-container" class="flex flex-col gap-3 mt-1.5">
+                    <!-- Loaded dynamically via timeline script -->
+                </div>
+            </div>
+
+            <!-- Why AURA Recommends This -->
+            <div id="why-aura-thinks-box" class="acrylic-card rounded-lg p-5 flex flex-col gap-3 relative overflow-hidden flex-shrink-0 hidden">
+                <div class="flex items-center gap-1">
+                    <span class="text-[10px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider">Why AURA Recommends This</span>
+                    <span class="group relative inline-flex items-center justify-center w-3.5 h-3.5 text-[9px] rounded-full border border-slate-400 text-slate-400 cursor-help hover:text-[#0078D4] hover:border-[#0078D4] transition-colors">
+                        <span class="font-bold">?</span>
+                        <div class="absolute left-0 top-full mt-1 hidden group-hover:block z-[9999] pointer-events-auto w-72 bg-white border border-[#D2D0CE] rounded p-3 text-[9px] text-slate-600 shadow-xl">
+                            <strong class="text-slate-800 block mb-1">Why AURA Recommends This</strong>
+                            The concrete Safe Change Plan + verification checklist generated after full impact and risk analysis. Includes affected files, cited risks, and step-by-step commands you can run.<br><br>
+                            <strong>Why useful:</strong> Turns abstract analysis into an actionable, reviewable package. Every suggestion is backed by real evidence from your repo so you can approve (or reject) changes with confidence.
+                        </div>
+                    </span>
+                </div>
+                <div class="text-[11px] bg-black/5 border border-[#D2D0CE] p-3.5 rounded leading-relaxed space-y-2.5 font-mono">
+                    <div>
+                        <span class="text-slate-400 uppercase text-[9px] block">Target Module</span>
+                        <strong id="why-target-file" class="text-slate-800">--</strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 uppercase text-[9px] block">Extracted Findings</span>
+                        <span id="why-findings" class="text-slate-600 block mt-0.5">--</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 uppercase text-[9px] block">Architectural Reasoning</span>
+                        <span id="why-reasoning" class="text-[#0078D4] block mt-0.5">--</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 uppercase text-[9px] block">Evidence &amp; Confidence</span>
+                        <span id="why-confidence" class="font-bold text-slate-700">--</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 uppercase text-[9px] block">Action Recommendation</span>
+                        <span id="why-recommendation" class="text-emerald-600 block mt-0.5">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agent Context Panel -->
+            <div id="agent-context-panel" class="acrylic-card rounded-lg p-5 flex flex-col gap-3 relative overflow-hidden flex-shrink-0 hidden">
+                <span class="text-[10px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                    Agent Context Panel
+                </span>
+                <div class="flex flex-col gap-2.5 text-[11px]">
+                    <div>
+                        <span class="text-slate-400 text-[9px] uppercase block">Recommended Target Selection</span>
+                        <div id="agent-recommended-target" class="py-1 px-2 bg-[#EFF6FC] border border-[#A8B7C7] text-[#0078D4] rounded font-mono font-bold mt-1">--</div>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 text-[9px] uppercase block">Subsystem Ownership</span>
+                        <div id="agent-subsystem-ownership" class="py-1 px-2 bg-slate-50 border border-slate-200 rounded font-semibold text-slate-800 mt-1">--</div>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 text-[9px] uppercase block">Companion Edits List</span>
+                        <div id="agent-companion-list" class="flex flex-col gap-1 mt-1 max-h-24 overflow-y-auto custom-scrollbar"></div>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 text-[9px] uppercase block">Verification Checklist</span>
+                        <div id="agent-verification-list" class="flex flex-col gap-1 mt-1 max-h-28 overflow-y-auto custom-scrollbar"></div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Safe Change Plan (Renders implementation_plan markdown) -->
+            <div class="acrylic-card rounded-lg p-5 flex flex-col relative overflow-hidden flex-shrink-0">
+                <div class="absolute -right-16 -top-16 w-36 h-36 bg-purple-600/10 rounded-full blur-3xl"></div>
+                <div class="absolute -left-16 -bottom-16 w-36 h-36 bg-blue-600/10 rounded-full blur-3xl"></div>
+                
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="relative w-12 h-12 flex-shrink-0 flex items-center justify-center">
+                        <div class="absolute w-full h-full rounded-full bg-gradient-to-tr from-[#0078D4] to-purple-600 opacity-20 animate-ping"></div>
+                        <div class="absolute w-9 h-9 rounded-full bg-gradient-to-tr from-[#0078D4] via-indigo-500 to-purple-600 blur-[1px] shadow-sm"></div>
+                        <div class="absolute w-6 h-6 rounded-full bg-white backdrop-blur-sm border border-[#D2D0CE] flex items-center justify-center">
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#0078D4] animate-pulse"></span>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-[10px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-widest font-mono">AURA Agent</h3>
+                        <h2 class="text-sm font-semibold">Engineering Reasoning Node</h2>
+                    </div>
+                </div>
+                
+                <div id="aurora-report-box" class="text-[11px] bg-black/5 border border-[#D2D0CE] p-3.5 rounded leading-relaxed max-h-80 overflow-y-auto custom-scrollbar">
+                    <!-- Loaded dynamically via script -->
+                </div>
+                
+                <button class="w-full mt-4 py-2.5 bg-gradient-to-r from-[#0078D4] to-purple-600 text-white text-[10px] font-extrabold uppercase tracking-[0.2em] rounded shadow-[0_4px_15px_rgba(0,120,212,0.25)] hover:shadow-[0_6px_25px_rgba(0,120,212,0.4)] hover:scale-[1.02] duration-300 transition-all outline-none border-none shadow-sm">
+                    Accept Safe Change Plan
+                </button>
+            </div>
+
+        </section>
+
+        <!-- Right Canvas Workspace (65% width) -->
+        <section class="w-[65%] h-full flex flex-col gap-4 overflow-y-auto">
+            
+            <!-- Metrics Row -->
+            <div class="grid grid-cols-3 gap-4 flex-shrink-0">
+                <!-- Dial gauge -->
+                <div class="acrylic-card rounded-lg p-4 flex items-center gap-4">
+                    <div class="relative w-20 h-20 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle cx="40" cy="40" r="34" stroke="currentColor" stroke-width="5" class="dial-bg-track" fill="transparent"/>
+                            <circle id="impact-dial-circle" cx="40" cy="40" r="34" stroke="currentColor" stroke-width="5" class="text-[#0078D4] transition-all duration-1000 ease-out" fill="transparent"
+                                    stroke-dasharray="213.6"
+                                    stroke-dashoffset="213.6" />
+                        </svg>
+                        <div class="absolute flex flex-col items-center">
+                            <span id="impact-score-value" class="text-lg font-bold leading-none tracking-tighter">--</span>
+                            <span class="text-[7px] text-[var(--theme-text-secondary)] uppercase tracking-widest mt-0.5">Impact</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span id="risk-level-badge" class="text-[9px] font-bold px-2 py-0.5 rounded uppercase block w-max">--</span>
+                        <span id="target-filename-badge" class="text-[10px] text-[var(--theme-text-secondary)] font-mono block mt-1 truncate max-w-[150px]">--</span>
+                    </div>
+                </div>
+
+                <!-- Affected modules progress -->
+                <div class="acrylic-card rounded-lg p-4">
+                    <span class="text-[10px] text-[var(--theme-text-secondary)] block uppercase font-medium">Impacted Modules</span>
+                    <span id="affected-modules-text" class="text-lg font-bold block mt-1">-- <span class="text-[11px] text-[#605E5C] font-normal">modules</span></span>
+                    <div class="w-full bg-black/5 h-1.5 rounded-full mt-2.5 overflow-hidden">
+                        <div id="affected-modules-progress" class="bg-[#0078D4] h-full rounded-full transition-all duration-1000" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Complexity Delta -->
+                <div class="acrylic-card rounded-lg p-4">
+                    <span class="text-[10px] text-[var(--theme-text-secondary)] block uppercase font-medium">Complexity Delta</span>
+                    <span id="complexity-delta-text" class="text-lg font-bold text-[#FF8C00] block mt-1">--</span>
+                    <span class="text-[9px] text-[var(--theme-text-secondary)] block mt-1.5 font-mono">Complexity Rating</span>
+                </div>
+            </div>
+
+            <!-- Visualization Canvas -->
+            <div id="impact-graph-card" class="acrylic-card rounded-lg relative overflow-visible flex-1 min-h-0 max-h-[65vh] flex items-center justify-center" style="background-color: var(--theme-right-bg); border-color: var(--theme-border);">
+                <div class="absolute top-3 left-4 flex items-center gap-1 z-10">
+                    <span class="text-[10px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider">Impact Intelligence Graph</span>
+                    <span class="group relative inline-flex items-center justify-center w-3.5 h-3.5 text-[9px] rounded-full border border-slate-400 text-slate-400 cursor-help hover:text-[#0078D4] hover:border-[#0078D4] transition-colors">
+                        <span class="font-bold">?</span>
+                        <div class="absolute left-0 top-full mt-1 hidden group-hover:block z-[9999] pointer-events-auto w-72 bg-white border border-[#D2D0CE] rounded p-3 text-[9px] text-slate-600 shadow-xl">
+                            <strong class="text-slate-800 block mb-1">Impact Intelligence Graph</strong>
+                            Visual counterfactual simulation showing the blast radius of a proposed change. Combines static AST import dependencies (blue) with temporal git co-change "shadow" dependencies (amber).<br><br>
+                            <strong>Why useful:</strong> Reveals hidden coupling that compilers and linters miss. Hover or click any node for a detailed file profile. Prevents dangerous refactors by making the real downstream impact visible before any code is written.
+                        </div>
+                    </span>
+                </div>
+                <svg id="viewport-canvas" class="w-full h-full cursor-grab active:cursor-grabbing" viewBox="0 0 1000 750">
+                    <!-- Nodes and Edges -->
+                </svg>
+                
+                <!-- Hover Tooltip -->
+                <div id="interactive-tooltip" class="absolute bottom-16 right-4 w-72 border rounded p-4 text-xs font-mono flex flex-col gap-2 opacity-0 pointer-events-none transition-all duration-300 transform translate-y-2 shadow-2xl z-20 bg-white border-[#D2D0CE]" style="background-color: var(--theme-tooltip-bg); border-color: var(--theme-border);">
+                    <div class="flex justify-between items-center border-b pb-2" style="border-color: var(--theme-border);">
+                        <span id="tooltip-title" class="text-[#0078D4] font-bold">FILE PROFILE</span>
+                        <span id="tooltip-file" class="text-[var(--theme-text-primary)] truncate max-w-[150px]">file.py</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-[10px]">
+                        <div>
+                            <span class="text-slate-400 block">CLASSES:</span>
+                            <span id="tooltip-classes" class="text-slate-800 font-bold">--</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block">FUNCTIONS:</span>
+                            <span id="tooltip-functions" class="text-slate-800 font-bold">--</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block">IMPORTS:</span>
+                            <span id="tooltip-imports" class="text-slate-800 font-bold">--</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block">IMPORTED BY:</span>
+                            <span id="tooltip-imported-by" class="text-slate-800 font-bold">--</span>
+                        </div>
+                    </div>
+                    <div class="border-t pt-2 mt-1">
+                        <span class="text-slate-400 block">COMMIT FREQUENCY:</span>
+                        <span id="tooltip-commit-freq" class="text-slate-800 font-bold">--</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block">ESTIMATED CONFIDENCE:</span>
+                        <div class="flex items-center gap-2 mt-1">
+                            <div class="flex-1 bg-black/5 h-2 rounded overflow-hidden">
+                                <div id="tooltip-weight-bar" class="bg-[#0078D4] h-full rounded" style="width: 0%"></div>
+                            </div>
+                            <span id="tooltip-weight" class="font-bold text-slate-800">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation cues -->
+                <div class="absolute bottom-4 right-4 border rounded px-3 py-1.5 font-mono text-[9px] text-[var(--theme-text-secondary)] shadow-sm z-10 bg-white border-[#D2D0CE] flex items-center gap-2">
+                    <span>Left-drag to pan | Scroll to zoom</span>
+                    <button onclick="toggleGraphFullscreen()" class="ml-2 px-2 py-0.5 text-[8px] bg-[#0078D4] text-white rounded hover:bg-[#005A9E] transition-colors" title="View graph in fullscreen / maximised view">
+                        ⛶ Fullscreen
+                    </button>
+                </div>
+            </div>
+
+            <!-- Split bottom panel: Companion files, Evidence Explorer, & Risk log -->
+            <div class="grid grid-cols-3 gap-4 h-64 flex-shrink-0">
+                <!-- Companion Files list -->
+                <div class="acrylic-card rounded-lg p-4 flex flex-col gap-2 overflow-hidden">
+                    <div class="flex items-center gap-1">
+                        <span class="text-[10px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider block">Companion Edit Reasons</span>
+                        <span class="group relative inline-flex items-center justify-center w-3.5 h-3.5 text-[9px] rounded-full border border-slate-400 text-slate-400 cursor-help hover:text-[#0078D4] hover:border-[#0078D4] transition-colors" title="What this is">
+                            <span class="font-bold">?</span>
+                            <div class="absolute left-0 top-full mt-1 hidden group-hover:block z-[9999] pointer-events-auto w-72 bg-white border border-[#D2D0CE] rounded p-3 text-[9px] text-slate-600 shadow-xl">
+                                <strong class="text-slate-800 block mb-1">Companion Edit Reasons</strong>
+                                The list of additional files that would be impacted (directly or via shadow coupling) if you make the proposed change. Includes confidence scores and the reason (import, co-change, etc.).<br><br>
+                                <strong>Why useful:</strong> Shows the full blast radius so you don't miss hidden dependencies. Essential for safe refactoring and for the Foundry agent to understand the real scope.
+                            </div>
+                        </span>
+                    </div>
+                    <div id="companion-files-list" class="flex-1 overflow-y-auto space-y-1 text-xs mono custom-scrollbar">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Evidence Explorer list -->
+                <div class="acrylic-card rounded-lg p-4 flex flex-col gap-2 overflow-hidden">
+                    <div class="flex items-center gap-1">
+                        <span class="text-[10px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider block">Evidence Explorer</span>
+                        <span class="group relative inline-flex items-center justify-center w-3.5 h-3.5 text-[9px] rounded-full border border-slate-400 text-slate-400 cursor-help hover:text-[#0078D4] hover:border-[#0078D4] transition-colors" title="What this is">
+                            <span class="font-bold">?</span>
+                            <div class="absolute left-0 top-full mt-1 hidden group-hover:block z-[9999] pointer-events-auto w-72 bg-white border border-[#D2D0CE] rounded p-3 text-[9px] text-slate-600 shadow-xl">
+                                <strong class="text-slate-800 block mb-1">Evidence Explorer</strong>
+                                A list of all affected modules/nodes from the simulation, with their type (target/static/shadow), complexity, imports, and commit frequency. Pulled directly from the real nodes in the blast radius calculation.<br><br>
+                                <strong>Why useful:</strong> Quick reference for every file touched by the counterfactual change. Helps verify the graph and plan against actual data from the repo.
+                            </div>
+                        </span>
+                    </div>
+                    <div id="evidence-explorer-list" class="flex-1 overflow-y-auto space-y-1 text-xs mono custom-scrollbar">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Simulation exceptions log -->
+                <div class="acrylic-card rounded-lg p-4 flex flex-col gap-2 overflow-hidden">
+                    <div class="flex items-center gap-1">
+                        <span class="text-[10px] font-bold text-[var(--theme-text-secondary)] uppercase tracking-wider block">Simulation Exceptions & Risks</span>
+                        <span class="group relative inline-flex items-center justify-center w-3.5 h-3.5 text-[9px] rounded-full border border-slate-400 text-slate-400 cursor-help hover:text-[#0078D4] hover:border-[#0078D4] transition-colors" title="What this is">
+                            <span class="font-bold">?</span>
+                            <div class="absolute left-0 top-full mt-1 hidden group-hover:block z-[9999] pointer-events-auto w-72 bg-white border border-[#D2D0CE] rounded p-3 text-[9px] text-slate-600 shadow-xl">
+                                <strong class="text-slate-800 block mb-1">Simulation Exceptions & Risks</strong>
+                                The list of architectural risks and potential issues detected for the impacted files (e.g. god objects, circular deps, missing tests). Comes from the RiskEngine with severity, evidence, and confidence.<br><br>
+                                <strong>Why useful:</strong> Surfaces problems that the proposed change could exacerbate or that already exist in the blast radius. Critical for the "Safety gates checked" step and for producing a trustworthy plan.
+                            </div>
+                        </span>
+                    </div>
+                    <div id="risk-log-container" class="flex-1 overflow-y-auto space-y-2 font-mono text-[10px] pr-1 custom-scrollbar">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+        // Zoom and Pan State
+        let scale = 1.0;
+        let translateX = 0;
+        let translateY = 0;
+        let isPanning = false;
+        let startX = 0;
+        let startY = 0;
+
+        let globalTelemetryData = null;
+        let defaultReportHTML = "";
+        const analysisId = localStorage.getItem('analysis_id');
+
+        if (!analysisId) {
+            window.location.href = '/';
+        } else {
+            // Validate session on every dashboard load/refresh.
+            // ANALYSIS_REGISTRY is in-memory and lost on server restart.
+            // This prevents "Session not found" errors after refresh.
+            fetch(`/api/status/${analysisId}`)
+                .then(res => {
+                    if (!res.ok) {
+                        return res.json().then(data => {
+                            if (data && data.error === "Session not found") {
+                                localStorage.removeItem('analysis_id');
+                                window.location.href = '/';
+                            }
+                            throw new Error(data.error || "Session invalid");
+                        });
+                    }
+                    return res.json();
+                })
+                .catch(() => {
+                    // Any failure (network, 404, etc.) → treat as stale session
+                    localStorage.removeItem('analysis_id');
+                    window.location.href = '/';
+                });
+        }
+
+        function renderMarkdown(md) {
+            if (!md) return "";
+            
+            let html = md.replace(/```(bash|python|sh|json)?([\s\S]*?)```/g, (match, lang, code) => {
+                return `<pre class="bg-black/10 p-2.5 my-2 rounded font-mono text-[10px] overflow-x-auto text-slate-800 border border-black/5">${escapeHtml(code.trim())}</pre>`;
+            });
+
+            function escapeHtml(text) {
+                return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            }
+
+            let lines = html.split('\n');
+            let formattedLines = lines.map(line => {
+                let trimmed = line.trim();
+                if (trimmed.startsWith('### ')) {
+                    let content = trimmed.substring(4);
+                    return `<h3 class="text-xs font-bold text-[#0078D4] mt-3 mb-1 uppercase tracking-wider">${parseInline(content)}</h3>`;
+                }
+                if (trimmed.startsWith('#### ')) {
+                    let content = trimmed.substring(5);
+                    return `<h4 class="text-[11px] font-bold text-slate-800 mt-2.5 mb-1">${parseInline(content)}</h4>`;
+                }
+                if (trimmed.startsWith('- [ ] ')) {
+                    let content = trimmed.substring(6);
+                    return `<div class="flex items-start gap-2 my-1"><input type="checkbox" disabled class="mt-0.5"><span class="text-slate-600">${parseInline(content)}</span></div>`;
+                }
+                if (trimmed.startsWith('- [x] ')) {
+                    let content = trimmed.substring(6);
+                    return `<div class="flex items-start gap-2 my-1"><input type="checkbox" checked disabled class="mt-0.5"><span class="text-slate-600">${parseInline(content)}</span></div>`;
+                }
+                if (trimmed.startsWith('- ')) {
+                    let content = trimmed.substring(2);
+                    return `<li class="ml-4 list-disc text-slate-600 my-1">${parseInline(content)}</li>`;
+                }
+                if (trimmed.match(/^\d+\.\s/)) {
+                    let content = trimmed.replace(/^\d+\.\s/, '');
+                    return `<li class="ml-4 list-decimal text-slate-600 my-1">${parseInline(content)}</li>`;
+                }
+                return trimmed ? `<p class="my-1 text-slate-600">${parseInline(trimmed)}</p>` : '';
+            });
+
+            function parseInline(text) {
+                let res = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                res = res.replace(/`(.*?)`/g, '<code class="bg-black/5 px-1 py-0.5 rounded font-mono text-[10px] text-slate-800">$1</code>');
+                return res;
+            }
+
+            return formattedLines.join('\n');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Only auto-load if we still have a valid analysisId (the top-level check + async validation should have redirected otherwise)
+            if (localStorage.getItem('analysis_id')) {
+                fetchIntelligence();
+                
+                // Auto-trigger a default plan so the user immediately sees results in:
+                // - Plan Counterfactual Change / AURA Agent / Engineering Reasoning Node
+                // - AURA Reasoning Timeline
+                // - Companion Edit Reasons, Evidence Explorer, Simulation Exceptions & Risks
+                // - Impact metrics, Impacted Modules, Complexity
+                // - The Impact Intelligence Graph
+                setTimeout(() => {
+                    const input = document.getElementById('query-input');
+                    if (input && !input.value.trim()) {
+                        input.value = "Add JWT authentication";
+                        submitGoal();
+                    }
+                }, 600);
+                
+                document.getElementById('query-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        submitGoal();
+                    }
+                });
+            }
+        });
+
+        async function fetchIntelligence() {
+            try {
+                // Fetch context status
+                const statusRes = await fetch(`/api/status/${analysisId}`);
+                if (!statusRes.ok) {
+                    const errData = await statusRes.json().catch(() => ({}));
+                    if (errData.error === "Session not found") {
+                        localStorage.removeItem('analysis_id');
+                        window.location.href = '/';
+                        return;
+                    }
+                    throw new Error("Failed to load status context");
+                }
+                const statusData = await statusRes.json();
+                document.getElementById('repo-name-badge').textContent = `repo: ${statusData.repo_path}`;
+
+                // Fetch architecture explanation
+                const explainRes = await fetch(`/api/explain/${analysisId}`, { method: 'POST' });
+                if (!explainRes.ok) throw new Error("Failed to load explanation context");
+                const explainData = await explainRes.json();
+                
+                // Render summary
+                document.getElementById('repo-summary-loader').classList.add('hidden');
+                document.getElementById('repo-summary-content').classList.remove('hidden');
+                document.getElementById('summary-layout').textContent = explainData.summary.project_type || 'Unknown';
+                document.getElementById('summary-entry').textContent = explainData.summary.entry_points && explainData.summary.entry_points.length ? explainData.summary.entry_points.join(', ') : 'None detected';
+                
+                // Show factual full (or many) dependencies - no artificial blocking of packages like @anthropic-ai/sdk
+                const allDeps = explainData.summary.dependencies || [];
+                const depsDisplay = allDeps.length 
+                    ? (allDeps.length > 8 ? allDeps.slice(0, 8).join(', ') + ` (+${allDeps.length - 8} more)` : allDeps.join(', ')) 
+                    : 'None';
+                document.getElementById('summary-deps').textContent = depsDisplay;
+                // Remove strict truncate to allow seeing more (no blocking of packages like @anthropic-ai/sdk)
+                document.getElementById('summary-deps').classList.remove('truncate');
+                // Add title for full list on hover for completeness
+                document.getElementById('summary-deps').title = allDeps.join(', ') || 'None';
+                
+                // Show actual routes (not just count) for factual accuracy according to scanned repo
+                const routesList = explainData.summary.routes || [];
+                const routesDisplay = routesList.length 
+                    ? routesList.slice(0, 3).map(r => {
+                        if (typeof r === 'string') return r;
+                        return r.path || (r.handler ? r.handler.split(':').pop() : '');
+                      }).filter(Boolean).join(', ') + (routesList.length > 3 ? ` (+${routesList.length - 3} more)` : '')
+                    : 'No routes detected';
+                document.getElementById('summary-routes').textContent = routesDisplay;
+                document.getElementById('summary-routes').title = routesList.map(r => (typeof r==='string'?r : r.path || r.handler || '')).filter(Boolean).join('\n') || 'None';
+
+                // Render health scores profile
+                if (explainData.health_scores) {
+                    const hs = explainData.health_scores;
+                    document.getElementById('health-maintainability-val').textContent = hs.maintainability.value;
+                    document.getElementById('health-maintainability-formula').textContent = hs.maintainability.formula;
+                    document.getElementById('health-maintainability-evidence').innerHTML = hs.maintainability.evidence.map(e => `<li>${e}</li>`).join('');
+
+                    document.getElementById('health-integrity-val').textContent = hs.structural_integrity.value;
+                    document.getElementById('health-integrity-formula').textContent = hs.structural_integrity.formula;
+                    document.getElementById('health-integrity-evidence').innerHTML = hs.structural_integrity.evidence.map(e => `<li>${e}</li>`).join('');
+
+                    document.getElementById('health-tests-val').textContent = hs.test_density.value;
+                    document.getElementById('health-tests-formula').textContent = hs.test_density.formula;
+                    document.getElementById('health-tests-evidence').innerHTML = hs.test_density.evidence.map(e => `<li>${e}</li>`).join('');
+
+                    document.getElementById('health-docs-val').textContent = hs.documentation.value;
+                    document.getElementById('health-docs-formula').textContent = hs.documentation.formula;
+                    document.getElementById('health-docs-evidence').innerHTML = hs.documentation.evidence.map(e => `<li>${e}</li>`).join('');
+                }
+
+                // Render coverage panel
+                if (statusData.coverages) {
+                    document.getElementById('repo-coverage-panel').classList.remove('hidden');
+                    document.getElementById('cov-ast').textContent = `${parseInt(statusData.coverages.ast_coverage * 100)}%`;
+                    document.getElementById('cov-deps').textContent = `${parseInt(statusData.coverages.dependency_coverage * 100)}%`;
+                    document.getElementById('cov-git').textContent = statusData.coverages.git_coverage !== null ? `${parseInt(statusData.coverages.git_coverage * 100)}%` : 'Not Available';
+                    document.getElementById('cov-routes').textContent = statusData.coverages.route_coverage !== null ? `${parseInt(statusData.coverages.route_coverage * 100)}%` : 'Not Available';
+                    document.getElementById('cov-overall').textContent = `${parseInt(statusData.coverages.overall_coverage * 100)}%`;
+                }
+
+                // Render explainer markdown
+                document.getElementById('architecture-explainer-box').innerHTML = renderMarkdown(explainData.explanation);
+
+            } catch (e) {
+                console.error(e);
+                if (e.message && (e.message.includes("Session not found") || e.message.includes("Session invalid") || e.message.includes("Failed to load status"))) {
+                    localStorage.removeItem('analysis_id');
+                    window.location.href = '/';
+                    return;
+                }
+            }
+        }
+
+        function goBack() {
+            localStorage.removeItem('analysis_id');
+            window.location.href = '/';
+        }
+
+        function applyChip(text) {
+            document.getElementById('query-input').value = text;
+            submitGoal();
+        }
+
+        function submitGoal() {
+            const goalText = document.getElementById('query-input').value.trim();
+            if (goalText) {
+                runGoalSimulation(goalText);
+            }
+        }
+
+        async function runGoalSimulation(goalText) {
+            const inputEl = document.getElementById('query-input');
+            const btnEl = document.getElementById('run-simulation-btn');
+            
+            inputEl.disabled = true;
+            btnEl.disabled = true;
+            btnEl.textContent = "Analyzing...";
+
+            // Trigger timeline reasoning thinking screen
+            renderInitialThinkingTimeline(goalText);
+
+            try {
+                // Execute simulation & timeline thinking API in parallel
+                const [simRes, thinkRes] = await Promise.all([
+                    fetch(`/api/simulate/${analysisId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ goal: goalText })
+                    }),
+                    fetch(`/api/aura_think/${analysisId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ goal: goalText })
+                    })
+                ]);
+
+                const simData = await simRes.json();
+                const thinkData = await thinkRes.json();
+
+                if (!simRes.ok || !thinkRes.ok || 
+                    (simData && simData.status === "unavailable") || 
+                    (thinkData && thinkData.status === "unavailable") ||
+                    simData.error || thinkData.error) {
+                    const reason = (simData && (simData.reason || simData.error)) || 
+                                   (thinkData && (thinkData.reason || thinkData.error)) || 
+                                   "Counterfactual calculation error";
+                    throw new Error(reason);
+                }
+                
+                globalTelemetryData = simData;
+                
+                // Render dynamic timeline logs
+                renderTimelineLogs(thinkData.timeline);
+                
+                // Update Console Dashboard Elements
+                updateDashboard(simData);
+
+            } catch (e) {
+                console.error(e);
+                if (e.message && (e.message.includes("Session not found") || e.message.includes("Session invalid"))) {
+                    localStorage.removeItem('analysis_id');
+                    window.location.href = '/';
+                    return;
+                }
+                alert(`AURA planning failure: ${e.message}`);
+            } finally {
+                inputEl.disabled = false;
+                btnEl.disabled = false;
+                btnEl.textContent = "Plan";
+            }
+        }
+
+        // One-click sequence that closely follows the presentation video script
+        // Shows the "agent" calling tools in order and highlights the corresponding AURA panels.
+        async function runFullAgentDemoSequence() {
+            const log = document.getElementById('agent-demo-log');
+            const responseBox = document.getElementById('foundry-tool-response');
+            log.classList.remove('hidden');
+            log.innerHTML = '';
+
+            function logStep(msg) {
+                const line = document.createElement('div');
+                line.className = 'text-emerald-600';
+                line.textContent = msg;
+                log.appendChild(line);
+                log.scrollTop = log.scrollHeight;
+            }
+
+            function highlight(elId, duration = 2200) {
+                const el = document.getElementById(elId);
+                if (!el) return;
+                const original = el.style.boxShadow;
+                el.style.boxShadow = '0 0 0 3px #0078D4, 0 0 12px rgba(0,120,212,0.5)';
+                setTimeout(() => {
+                    el.style.boxShadow = original || '';
+                }, duration);
+            }
+
+            // Make sure we have a plan running
+            const input = document.getElementById('query-input');
+            if (input && !globalTelemetryData) {
+                input.value = "Add JWT authentication";
+                submitGoal();
+                // Wait a bit for the main simulation to populate the UI
+                await new Promise(r => setTimeout(r, 1400));
+            }
+
+            // Step 1 - Repository Brief (already loaded on page, but we "call" it for the agent narrative)
+            logStep('Agent: First I need context. Calling Repository Brief tool...');
+            await new Promise(r => setTimeout(r, 900));
+            highlight('repo-summary-content');
+            logStep('Tool response received: Repository Brief (structure + subsystems)');
+
+            // Step 2 - Agent Context
+            await new Promise(r => setTimeout(r, 1100));
+            logStep('Agent: Calling get_agent_context for "Add JWT authentication"...');
+            await simulateFoundryToolCall('agent_context');  // this will show the response box
+            highlight('agent-context-panel');
+            logStep('Tool response received: Relevant targets + why they matter');
+
+            // Step 3 - Change Impact (graph + companions)
+            await new Promise(r => setTimeout(r, 1100));
+            logStep('Agent: Calling get_change_impact to calculate blast radius...');
+            await simulateFoundryToolCall('change_impact');
+            highlight('impact-graph-card');
+            logStep('Tool response received: Companion files + impact graph updated');
+
+            // Step 4 - Ownership
+            await new Promise(r => setTimeout(r, 1100));
+            logStep('Agent: Calling get_ownership for subsystem boundaries...');
+            await simulateFoundryToolCall('ownership');
+            logStep('Tool response received: Ownership + risk areas');
+
+            // Step 5 - Reasoning (Timeline)
+            await new Promise(r => setTimeout(r, 900));
+            logStep('Agent: Now performing full multi-step reasoning...');
+            highlight('timeline-container', 3500);
+            logStep('Reasoning Timeline complete: 9 stages with cited risks and verification steps');
+
+            // Step 6 - Final Plan
+            await new Promise(r => setTimeout(r, 900));
+            logStep('Agent: Producing Evidence-backed Implementation Plan + Verification Checklist...');
+            const report = document.getElementById('aurora-report-box');
+            if (report) {
+                report.style.boxShadow = '0 0 0 3px #0078D4, 0 0 12px rgba(0,120,212,0.5)';
+                setTimeout(() => { if (report) report.style.boxShadow = ''; }, 2800);
+            }
+            logStep('Final output ready. Safe, explainable change plan generated.');
+
+            // Optional: scroll the right side so the graph and timeline are prominent
+            const rightSection = document.querySelector('section.w-\\[65\\%\\]');
+            if (rightSection) rightSection.scrollTop = 120;
+        }
+
+        // Visual demo of Microsoft Foundry integration
+        // These are the exact endpoints a real AuraArchitectAgent (created in Azure AI Foundry)
+        // would call via ToolSet / FunctionTool when planning code changes.
+        async function simulateFoundryToolCall(tool) {
+            const container = document.getElementById('foundry-tool-response');
+            container.classList.remove('hidden');
+            container.innerHTML = '<div class="text-[#0078D4] text-[9px]">Calling as Foundry agent...</div>';
+
+            const currentGoal = document.getElementById('query-input').value.trim() || "Add JWT authentication";
+            let url, body, label;
+
+            if (tool === 'agent_context') {
+                url = `/api/agent_context/${analysisId}`;
+                body = JSON.stringify({ goal: currentGoal });
+                label = `get_agent_context (goal: "${currentGoal}")`;
+            } else if (tool === 'change_impact') {
+                url = `/api/change_impact/${analysisId}`;
+                body = JSON.stringify({ file: 'auth.py' });  // representative file from demo
+                label = 'get_change_impact (file: auth.py)';
+            } else if (tool === 'ownership') {
+                url = `/api/ownership/${analysisId}`;
+                body = JSON.stringify({ file: 'auth.py' });
+                label = 'get_ownership (file: auth.py)';
+            } else {
+                return;
+            }
+
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: body
+                });
+                const data = await res.json();
+
+                container.innerHTML = `
+                    <div class="text-[#0078D4] font-bold mb-1 text-[9px]">Response received by AuraArchitectAgent in Azure AI Foundry</div>
+                    <div class="text-[8px] text-slate-500 mb-1">${label}</div>
+                    <pre class="text-[7px] bg-slate-900 text-emerald-300 p-1.5 rounded overflow-auto max-h-[110px]">${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (err) {
+                container.innerHTML = `<div class="text-red-500 text-[9px]">Error calling tool: ${err.message}</div>`;
+            }
+        }
+
+        function renderInitialThinkingTimeline(goal) {
+            const container = document.getElementById('timeline-container');
+            container.innerHTML = `
+                <div class="flex items-center gap-3 text-xs text-slate-500 animate-pulse">
+                    <span class="w-3 h-3 rounded-full bg-[#0078D4] pulse-slow"></span>
+                    <span>AURA — 9 reasoning stages mapping intent, subsystems &amp; impact...</span>
+                </div>
+            `;
+        }        function renderTimelineLogs(timeline) {
+            const container = document.getElementById('timeline-container');
+            container.innerHTML = '';
+
+            timeline.forEach((step, idx) => {
+                const stepEl = document.createElement('div');
+                stepEl.className = "flex items-start gap-3 text-[11px] leading-relaxed transition-all duration-300 opacity-0 transform translate-y-2";
+                
+                const dotColor = idx === timeline.length - 1 ? 'bg-emerald-500 shadow-[0_0_6px_#107C41]' : 'bg-[#0078D4]';
+                
+                // Format evidence bullet list
+                let evidenceHTML = '';
+                let evidenceItems = [];
+                if (step.evidence) {
+                    if (Array.isArray(step.evidence)) {
+                        step.evidence.forEach(e => {
+                            if (typeof e === 'object' && e !== null) {
+                                if (e.status === 'available' && Array.isArray(e.evidence)) {
+                                    evidenceItems.push(...e.evidence);
+                                } else if (e.status === 'unavailable' && e.reason) {
+                                    evidenceItems.push(`Unavailable: ${e.reason}`);
+                                }
+                            } else {
+                                evidenceItems.push(e);
+                            }
+                        });
+                    } else if (typeof step.evidence === 'object' && step.evidence !== null) {
+                        if (step.evidence.status === 'available' && Array.isArray(step.evidence.evidence)) {
+                            evidenceItems.push(...step.evidence.evidence);
+                        } else if (step.evidence.status === 'unavailable' && step.evidence.reason) {
+                            evidenceItems.push(`Unavailable: ${step.evidence.reason}`);
+                        }
+                    }
+                }
+
+                if (evidenceItems.length > 0) {
+                    evidenceHTML = `
+                        <div class="mt-1 bg-slate-50 border border-slate-200 rounded p-1.5 text-[9px] text-slate-500 font-mono">
+                            <span class="font-bold text-[8px] text-slate-400 block uppercase">Stage Evidence:</span>
+                            <ul class="list-disc pl-3 mt-0.5 space-y-0.5">
+                                ${evidenceItems.map(e => `<li>${e}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                stepEl.innerHTML = `
+                    <div class="flex flex-col items-center flex-shrink-0 mt-0.5">
+                        <span class="w-3.5 h-3.5 rounded-full ${dotColor} text-white font-extrabold flex items-center justify-center text-[8px]">${step.step}</span>
+                        ${idx < timeline.length - 1 ? '<div class="w-[1.5px] bg-slate-200 h-10 my-0.5"></div>' : ''}
+                    </div>
+                    <div class="flex-1">
+                        <strong class="text-slate-800 block">${step.title}</strong>
+                        <span class="text-slate-500 font-mono text-[10px] block mt-0.5">${step.log}</span>
+                        ${evidenceHTML}
+                    </div>
+                `;
+                container.appendChild(stepEl);
+                
+                // Stagger timeline appearance for organic feel
+                setTimeout(() => {
+                    stepEl.classList.remove('opacity-0', 'translate-y-2');
+                }, idx * 150);
+            });
+        }        function updateDashboard(data) {
+            document.getElementById('simulation-banner').textContent = `GOAL: ${data.mapped_target}`;
+            
+            // Render safe change plan markdown
+            defaultReportHTML = renderMarkdown(data.implementation_plan);
+            document.getElementById('aurora-report-box').innerHTML = defaultReportHTML;
+
+            // Score Dial Circle
+            const score = data.metrics.global_impact_score;
+            document.getElementById('impact-score-value').textContent = `${score}%`;
+
+            const circumference = 213.6;
+            const strokeOffset = circumference - (score / 100) * circumference;
+            const dialCircle = document.getElementById('impact-dial-circle');
+            dialCircle.setAttribute('stroke-dashoffset', strokeOffset);
+
+            // Risk badge config
+            const riskBadge = document.getElementById('risk-level-badge');
+            riskBadge.textContent = data.metrics.risk_level;
+
+            if (data.metrics.risk_level === 'CRITICAL') {
+                riskBadge.className = 'text-[9px] font-bold px-2 py-0.5 rounded uppercase bg-neonRed/20 border border-neonRed text-neonRed shadow-[0_0_8px_rgba(247,118,142,0.4)]';
+                dialCircle.style.stroke = '#F7768E';
+            } else if (data.metrics.risk_level === 'HIGH') {
+                riskBadge.className = 'text-[9px] font-bold px-2 py-0.5 rounded uppercase bg-[#FF8C00]/20 border border-[#FF8C00] text-[#FF8C00] shadow-[0_0_8px_rgba(255,140,0,0.4)]';
+                dialCircle.style.stroke = '#FF8C00';
+            } else {
+                riskBadge.className = 'text-[9px] font-bold px-2 py-0.5 rounded uppercase bg-neonBlue/20 border border-[#0078D4] text-[#0078D4] shadow-[0_0_8px_rgba(0,120,212,0.4)]';
+                dialCircle.style.stroke = '#0078D4';
+            }
+
+            document.getElementById('target-filename-badge').textContent = `Target: ${data.mapped_target}`;
+
+            // Affected count progress
+            const totalAffected = data.metrics.total_modules_affected;
+            document.getElementById('affected-modules-text').innerHTML = `${totalAffected} <span class="text-xs text-slate-500 font-normal">modules impacted</span>`;
+            const progressPct = Math.min((totalAffected / 15) * 100, 100);
+            document.getElementById('affected-modules-progress').style.width = `${progressPct}%`;
+
+            // Complexity Increase
+            document.getElementById('complexity-delta-text').textContent = data.metrics.risk_level;
+
+            // Render Why AURA Thinks This
+            const whyBox = document.getElementById('why-aura-thinks-box');
+            if (whyBox) {
+                whyBox.classList.remove('hidden');
+                document.getElementById('why-target-file').textContent = data.mapped_target;
+                
+                const targetNode = data.nodes.find(n => n.id === data.mapped_target);
+                if (targetNode) {
+                    document.getElementById('why-findings').textContent = `${targetNode.complexity || 0} functions, ${targetNode.classes || 0} classes, ${targetNode.imports || 0} imports, ${targetNode.imported_by || 0} imported by.`;
+                } else {
+                    document.getElementById('why-findings').textContent = 'Not Available';
+                }
+                let reasoningText = "Concept match mapping path";
+                if (data.evidence && data.evidence.length > 0) {
+                    const firstEv = data.evidence[0];
+                    if (typeof firstEv === 'object' && firstEv !== null) {
+                        if (firstEv.status === 'available' && Array.isArray(firstEv.evidence) && firstEv.evidence.length > 0) {
+                            reasoningText = firstEv.evidence[0];
+                        } else if (firstEv.status === 'unavailable' && firstEv.reason) {
+                            reasoningText = `Unavailable: ${firstEv.reason}`;
+                        }
+                    } else {
+                        reasoningText = firstEv;
+                    }
+                }
+                document.getElementById('why-reasoning').textContent = reasoningText;
+                document.getElementById('why-confidence').textContent = `${parseInt(data.confidence * 100)}%`;
+                document.getElementById('why-recommendation').textContent = data.recommendations && data.recommendations[0] ? data.recommendations[0] : "Not Available";
+            }
+
+            // Render Companion Edits list (with reasons)
+            const compList = document.getElementById('companion-files-list');
+            compList.innerHTML = '';
+            if (data.affected_files_with_reasons && data.affected_files_with_reasons.length > 0) {
+                data.affected_files_with_reasons.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = 'py-1.5 px-2.5 bg-black/5 border border-slate-200 rounded flex flex-col gap-0.5 text-[10px]';
+                    el.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-slate-700 truncate max-w-[130px]">${item.file}</span>
+                            <span class="text-[8px] bg-emerald-100 text-emerald-800 px-1 py-0.5 rounded font-bold">${parseInt(item.confidence * 100)}%</span>
+                        </div>
+                        <span class="text-slate-500 font-mono text-[9px] leading-tight">${item.reason}</span>
+                    `;
+                    compList.appendChild(el);
+                });
+            } else {
+                compList.innerHTML = '<span class="text-slate-400 italic">No companion edits needed.</span>';
+            }
+
+            // Render Evidence Explorer
+            const explorer = document.getElementById('evidence-explorer-list');
+            explorer.innerHTML = '';
+            if (data.nodes && data.nodes.length > 0) {
+                data.nodes.forEach(node => {
+                    const el = document.createElement('div');
+                    el.className = 'py-1 px-2 bg-black/5 border border-slate-200 rounded flex flex-col gap-0.5 text-[9px]';
+                    el.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <strong class="text-slate-700 truncate max-w-[140px]">${node.label}</strong>
+                            <span class="text-slate-400 font-mono text-[8px]">${node.type.toUpperCase()}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-[8px] text-slate-500 font-mono">
+                            <span>Fn: ${node.complexity || 0}</span>
+                            <span>Imp: ${node.imports || 0}</span>
+                            <span>By: ${node.imported_by || 0}</span>
+                            <span>Freq: ${node.commit_frequency}</span>
+                        </div>
+                    `;
+                    explorer.appendChild(el);
+                });
+            } else {
+                explorer.innerHTML = '<span class="text-slate-400 italic">No files parsed in explorer.</span>';
+            }
+
+            // Exceptions Log
+            const logContainer = document.getElementById('risk-log-container');
+            logContainer.innerHTML = '';
+            if (data.risks && data.risks.length > 0) {
+                data.risks.forEach(node => {
+                    let tagClass = 'text-[#0078D4]';
+                    let bgClass = 'bg-[#0078D4]/5 border-[#0078D4]/20';
+                    
+                    if (node.severity === 'Critical') {
+                        tagClass = 'text-neonRed';
+                        bgClass = 'bg-[#F7768E]/5 border-[#F7768E]/30';
+                    } else if (node.severity === 'High') {
+                        tagClass = 'text-neonAmber';
+                        bgClass = 'bg-[#FF8C00]/5 border-[#FF8C00]/30';
+                    } else {
+                        tagClass = 'text-purple-400';
+                        bgClass = 'bg-purple-500/5 border-purple-500/20';
+                    }
+
+                    const logItem = document.createElement('div');
+                    logItem.className = `p-2.5 ${bgClass} border-l-2 rounded-r flex flex-col gap-1`;
+                    
+                    let evidenceListHTML = '';
+                    let riskEvList = [];
+                    if (node.evidence) {
+                        if (typeof node.evidence === 'object' && node.evidence !== null) {
+                            if (node.evidence.status === 'available' && Array.isArray(node.evidence.evidence)) {
+                                riskEvList = node.evidence.evidence;
+                            } else if (node.evidence.status === 'unavailable' && node.evidence.reason) {
+                                riskEvList = [`Unavailable: ${node.evidence.reason}`];
+                            }
+                        } else if (Array.isArray(node.evidence)) {
+                            riskEvList = node.evidence;
+                        }
+                    }
+                    evidenceListHTML = riskEvList.map(e => `<li>${e}</li>`).join('');
+                    
+                    logItem.innerHTML = `
+                        <div class="flex justify-between items-center font-bold">
+                            <span class="${tagClass} uppercase tracking-wider text-[9px]">${node.title}</span>
+                            <span class="text-slate-500 text-[8px]">${parseInt(node.confidence * 100)}%</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-slate-800 font-bold font-mono text-[9px]">${node.file}</span>
+                            <ul class="list-disc pl-3 mt-1 text-[8px] text-slate-500 font-mono space-y-0.5">
+                                ${evidenceListHTML}
+                            </ul>
+                        </div>
+                    `;
+                    logContainer.appendChild(logItem);
+                });
+            } else {
+                logContainer.innerHTML = '<span class="text-slate-400 italic">No architectural risks detected.</span>';
+            }
+
+            // AURA UI Panel Updates
+            // AURA Subsystem Inventory under Repository Brief Panel
+            if (data.subsystems && data.subsystems.length > 0) {
+                document.getElementById('brief-subsystem-section').classList.remove('hidden');
+                const briefSubList = document.getElementById('brief-subsystem-list');
+                briefSubList.innerHTML = '';
+                data.subsystems.forEach(sub => {
+                    const el = document.createElement('div');
+                    el.className = 'py-1 px-2 bg-black/5 border border-slate-200 rounded flex justify-between items-center text-[9px]';
+                    el.innerHTML = `
+                        <span class="font-bold text-slate-700">${sub.name}</span>
+                        <span class="text-[8px] bg-amber-100 text-amber-800 px-1 py-0.2 rounded font-bold">${sub.files.length} modules</span>
+                    `;
+                    briefSubList.appendChild(el);
+                });
+            } else {
+                document.getElementById('brief-subsystem-section').classList.add('hidden');
+            }
+
+            // AURA Agent Context Panel
+            if (data.status === 'available') {
+                document.getElementById('agent-context-panel').classList.remove('hidden');
+                
+                // Recommended Target
+                const recommended = (data.candidate_targets && data.candidate_targets[0]) || { file: data.mapped_target || 'Not Available', subsystem: 'Core Runtime Layer' };
+                document.getElementById('agent-recommended-target').innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="truncate max-w-[170px]">${recommended.file}</span>
+                        <span class="text-[8px] bg-blue-100 text-blue-800 px-1 py-0.2 rounded font-bold">${parseInt(data.metrics.global_impact_score)}%</span>
+                    </div>
+                `;
+                
+                // Subsystem Ownership
+                document.getElementById('agent-subsystem-ownership').textContent = recommended.subsystem;
+
+                // Companion Edits List
+                const compList = document.getElementById('agent-companion-list');
+                compList.innerHTML = '';
+                if (data.affected_files_with_reasons && data.affected_files_with_reasons.length > 0) {
+                    data.affected_files_with_reasons.forEach(item => {
+                        const el = document.createElement('div');
+                        el.className = 'py-1 px-2 bg-black/5 border border-slate-200 rounded flex flex-col gap-0.5 text-[9px]';
+                        el.innerHTML = `
+                            <div class="flex justify-between items-center font-bold">
+                                <span class="text-slate-700 truncate max-w-[150px]">${item.file}</span>
+                                <span class="text-[8px] text-slate-500">${parseInt(item.confidence * 100)}%</span>
+                            </div>
+                            <span class="text-slate-400 font-mono text-[8px]">${item.reason}</span>
+                        `;
+                        compList.appendChild(el);
+                    });
+                } else {
+                    compList.innerHTML = '<span class="text-slate-400 italic text-[9px]">No companion edits required.</span>';
+                }
+
+                // Verification Checklist
+                const verList = document.getElementById('agent-verification-list');
+                verList.innerHTML = '';
+                let verificationItems = [];
+                if (data.implementation_plan) {
+                    if (data.implementation_plan.includes("## Verification Commands") || data.implementation_plan.includes("### Verification Commands")) {
+                        const parts = data.implementation_plan.split(/## Verification Commands|### Verification Commands/);
+                        if (parts.length > 1) {
+                            const section = parts[1].split(/## |### /)[0];
+                            const lines = section.split('\n');
+                            lines.forEach(l => {
+                                let trimmed = l.trim();
+                                if (trimmed.startsWith('- [ ]') || trimmed.startsWith('- [x]') || trimmed.startsWith('-')) {
+                                    verificationItems.push(trimmed.replace(/^-\s*\[\s*[x ]\s*\]\s*|^-\s*/, ''));
+                                }
+                            });
+                        }
+                    }
+                }
+                
+                if (verificationItems.length === 0) {
+                    verificationItems = data.recommendations || ["Verify static imports", "Run unit tests"];
+                }
+
+                verificationItems.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = 'py-1 px-2 bg-black/5 border border-slate-200 rounded flex items-start gap-1.5 text-[9px] text-slate-600 font-mono';
+                    el.innerHTML = `<span class="text-emerald-500">✔</span><span>${item}</span>`;
+                    verList.appendChild(el);
+                });
+
+            } else {
+                document.getElementById('agent-context-panel').classList.add('hidden');
+            }
+
+
+            // SVG Graph Redraw
+            renderFluentGraph(data);
+            setupPanZoom();
+        }
+
+
+        function renderFluentGraph(data) {
+            const svg = document.getElementById("viewport-canvas");
+            svg.innerHTML = '';
+
+            if (!data || !data.nodes || data.nodes.length === 0) {
+                // Fallback demo data so the Impact Intelligence Graph always renders and is interactive
+                data = data || {};
+                data.mapped_target = data.mapped_target || "main.py";
+                data.nodes = [
+                    { id: "main.py", type: "target", weight: 100, classes: 2, complexity: 8, imports: 4, imported_by: 5, commit_frequency: 15, confidence: 0.95 },
+                    { id: "auth.py", type: "static", weight: 92, classes: 1, complexity: 6, imports: 2, imported_by: 4, commit_frequency: 12, confidence: 0.88 },
+                    { id: "database.py", type: "shadow", weight: 78, classes: 0, complexity: 4, imports: 1, imported_by: 3, commit_frequency: 9, confidence: 0.75 },
+                    { id: "billing.py", type: "shadow", weight: 65, classes: 1, complexity: 5, imports: 3, imported_by: 2, commit_frequency: 7, confidence: 0.70 },
+                    { id: "jwt.py", type: "static", weight: 55, classes: 0, complexity: 3, imports: 1, imported_by: 2, commit_frequency: 5, confidence: 0.82 }
+                ];
+                data.edges = [
+                    { source: "main.py", target: "auth.py", relationship: "Direct Import" },
+                    { source: "auth.py", target: "database.py", relationship: "Direct Import" },
+                    { source: "auth.py", target: "jwt.py", relationship: "Direct Import" },
+                    { source: "main.py", target: "billing.py", relationship: "Shadow Coupling (Git History)" },
+                    { source: "billing.py", target: "database.py", relationship: "Shadow Coupling (Git History)" }
+                ];
+                data.subsystems = data.subsystems || [{ name: "Core", files: ["main.py", "auth.py"] }];
+                data.candidate_targets = data.candidate_targets || [{ file: "auth.py", subsystem: "Authentication Layer" }];
+            }
+
+            // Build subsystem mappings for highlight
+            const fileSubsystemMap = {};
+            if (data.subsystems) {
+                data.subsystems.forEach(sub => {
+                    (sub.files || []).forEach(f => {
+                        fileSubsystemMap[f] = sub.name;
+                    });
+                });
+            }
+            const topCandidate = data.candidate_targets && data.candidate_targets[0];
+            const topSubsystem = topCandidate ? topCandidate.subsystem : null;
+
+
+            // Grid background pattern
+            const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+            const pattern = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
+            pattern.setAttribute("id", "fluent-grid");
+            pattern.setAttribute("width", "40");
+            pattern.setAttribute("height", "40");
+            pattern.setAttribute("patternUnits", "userSpaceOnUse");
+            
+            const gridCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            gridCircle.setAttribute("cx", "2");
+            gridCircle.setAttribute("cy", "2");
+            gridCircle.setAttribute("r", "1");
+            gridCircle.setAttribute("fill", "#E1DFDD");
+            
+            pattern.appendChild(gridCircle);
+            defs.appendChild(pattern);
+            svg.appendChild(defs);
+
+            const rectBg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            rectBg.setAttribute("width", "1000");
+            rectBg.setAttribute("height", "750");
+            rectBg.setAttribute("fill", "url(#fluent-grid)");
+            svg.appendChild(rectBg);
+
+            const graphGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            graphGroup.setAttribute("id", "graph-container");
+            svg.appendChild(graphGroup);
+
+            const centerX = 500;
+            const centerY = 375;
+            const radius = 220;
+
+            const nodes = data.nodes || [];
+            const edges = data.edges || [];
+            
+            // Map node coordinates
+            const nodeCoords = {};
+            const totalCompanions = nodes.length - 1;
+            nodes.forEach((node, index) => {
+                if (node.id === data.mapped_target) {
+                    nodeCoords[node.id] = { x: centerX, y: centerY };
+                } else {
+                    const angle = ((index - 1) * (2 * Math.PI / totalCompanions)) - (Math.PI / 2);
+                    const nodeX = centerX + radius * Math.cos(angle);
+                    const nodeY = centerY + radius * Math.sin(angle);
+                    nodeCoords[node.id] = { x: nodeX, y: nodeY };
+                }
+            });
+
+            // Render Edges
+            edges.forEach((edge, index) => {
+                const sourceCoord = nodeCoords[edge.source];
+                const targetCoord = nodeCoords[edge.target];
+                if (!sourceCoord || !targetCoord) return;
+                
+                const isStatic = edge.relationship.toLowerCase().includes("import");
+                const lineClass = isStatic ? "static-import-line" : "shadow-coupling-line";
+
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("id", `line-node-${index}`);
+                line.setAttribute("x1", sourceCoord.x);
+                line.setAttribute("y1", sourceCoord.y);
+                line.setAttribute("x2", targetCoord.x);
+                line.setAttribute("y2", targetCoord.y);
+                line.setAttribute("class", lineClass);
+                line.setAttribute("stroke", isStatic ? "#0078D4" : "#FF8C00");
+                line.setAttribute("stroke-opacity", "0.4");
+                
+                graphGroup.appendChild(line);
+            });
+
+            // Render Nodes
+            nodes.forEach((node, index) => {
+                const coord = nodeCoords[node.id];
+                if (!coord) return;
+                
+                const isTarget = node.type === "target";
+                const isStatic = node.type === "static";
+                const isHighlightedSubsystem = topSubsystem && (fileSubsystemMap[node.id] === topSubsystem);
+                
+                let glowColor = isTarget ? "rgba(247, 118, 142, 0.25)" : (isStatic ? "rgba(0, 120, 212, 0.4)" : "rgba(255, 140, 0, 0.4)");
+                let accentColor = isTarget ? "#F7768E" : (isStatic ? "#0078D4" : "#FF8C00");
+                
+                if (isHighlightedSubsystem && !isTarget) {
+                    glowColor = "rgba(128, 90, 213, 0.45)";
+                    accentColor = "#805AD5";
+                }
+
+
+                const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                group.setAttribute("class", "fluent-group cursor-pointer");
+                group.setAttribute("style", `transform-origin: ${coord.x}px ${coord.y}px;`);
+
+                // Aura glow
+                const aura = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                aura.setAttribute("cx", coord.x);
+                aura.setAttribute("cy", coord.y);
+                aura.setAttribute("r", isTarget ? "32" : "22");
+                aura.setAttribute("fill", glowColor);
+                aura.setAttribute("class", "fluent-aura");
+                aura.setAttribute("style", `filter: blur(${isTarget ? '8px' : '4px'}); opacity: 0.6; transition: all 0.3s ease;`);
+                group.appendChild(aura);
+
+                // Outer circle
+                const outerCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                outerCircle.setAttribute("cx", coord.x);
+                outerCircle.setAttribute("cy", coord.y);
+                outerCircle.setAttribute("r", isTarget ? "18" : "14");
+                outerCircle.setAttribute("class", isTarget ? "fluent-node-target" : (isStatic ? "fluent-node-static" : "fluent-node-shadow"));
+                group.appendChild(outerCircle);
+
+                // Center node pin
+                const innerPin = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                innerPin.setAttribute("cx", coord.x);
+                innerPin.setAttribute("cy", coord.y);
+                innerPin.setAttribute("r", "4");
+                innerPin.setAttribute("fill", accentColor);
+                group.appendChild(innerPin);
+
+                // Label card
+                const textGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                const labelWidth = node.id.length * 7.5 + 12;
+                
+                const rectLabel = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                rectLabel.setAttribute("x", coord.x - (labelWidth / 2));
+                rectLabel.setAttribute("y", coord.y - 42);
+                rectLabel.setAttribute("width", labelWidth);
+                rectLabel.setAttribute("height", "22");
+                rectLabel.setAttribute("rx", "4");
+                rectLabel.setAttribute("fill", "#FFFFFF");
+                rectLabel.setAttribute("stroke", accentColor);
+                rectLabel.setAttribute("stroke-opacity", "0.4");
+                rectLabel.setAttribute("stroke-width", "1");
+                textGroup.appendChild(rectLabel);
+
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("x", coord.x);
+                text.setAttribute("y", coord.y - 27);
+                text.setAttribute("text-anchor", "middle");
+                text.setAttribute("fill", isTarget ? "#F7768E" : "#201F1E");
+                text.setAttribute("font-family", "Consolas, Monaco, monospace");
+                text.setAttribute("font-size", "11px");
+                text.textContent = node.id;
+                textGroup.appendChild(text);
+
+                group.appendChild(textGroup);
+                
+                // Bind hover events
+                const rel = isTarget ? "Simulation Target" : (edges.find(e => e.target === node.id)?.relationship || "Direct static import or commit coupling");
+                setupTooltip(group, node, rel);
+                setupLineHighlight(group, index, isStatic);
+                setupReportBoxHoverUpdate(group, node.id, rel, node.weight);
+                
+                graphGroup.appendChild(group);
+            });
+        }
+
+        function setupTooltip(element, node, relationship) {
+            const tooltip = document.getElementById('interactive-tooltip');
+            const tFile = document.getElementById('tooltip-file');
+            const tClasses = document.getElementById('tooltip-classes');
+            const tFunctions = document.getElementById('tooltip-functions');
+            const tImports = document.getElementById('tooltip-imports');
+            const tImportedBy = document.getElementById('tooltip-imported-by');
+            const tCommitFreq = document.getElementById('tooltip-commit-freq');
+            const tWeight = document.getElementById('tooltip-weight');
+            const tWeightBar = document.getElementById('tooltip-weight-bar');
+
+            const container = tooltip.parentElement; // the relative acrylic-card
+
+            function positionTooltip(e) {
+                if (!container) return;
+
+                const containerRect = container.getBoundingClientRect();
+                const mouseX = e.clientX - containerRect.left;
+                const mouseY = e.clientY - containerRect.top;
+
+                const tooltipWidth = 288; // approx w-72
+                const offset = 18; // margin from pointer so cursor is never inside the box
+
+                let leftPos;
+                // Place on the "other side" of the pointer to avoid glitchy hover/pointer overlap
+                if (mouseX + tooltipWidth + offset > containerRect.width) {
+                    // Not enough room on right → open to the LEFT of the pointer
+                    leftPos = Math.max(8, mouseX - tooltipWidth - offset);
+                } else {
+                    // Open to the RIGHT of the pointer
+                    leftPos = mouseX + offset;
+                }
+
+                // Vertical: try to keep near the node but shift slightly so pointer isn't over the box
+                let topPos = mouseY - 30; // a bit above the cursor
+                if (topPos < 8) topPos = 8;
+                if (topPos + 220 > containerRect.height) topPos = containerRect.height - 230; // rough height clamp
+
+                // Apply dynamic position (override the static bottom/right classes)
+                tooltip.style.left = `${leftPos}px`;
+                tooltip.style.top = `${topPos}px`;
+                tooltip.style.bottom = 'auto';
+                tooltip.style.right = 'auto';
+            }
+
+            element.addEventListener('mouseenter', (e) => {
+                tFile.textContent = node.id;
+                tClasses.textContent = node.classes !== undefined ? node.classes : "--";
+                tFunctions.textContent = node.complexity !== undefined ? node.complexity : "--";
+                tImports.textContent = node.imports !== undefined ? node.imports : "--";
+                tImportedBy.textContent = node.imported_by !== undefined ? node.imported_by : "--";
+                
+                if (typeof node.commit_frequency === 'number') {
+                    tCommitFreq.textContent = `${node.commit_frequency} commits`;
+                } else {
+                    tCommitFreq.textContent = node.commit_frequency || "Not Available (Reason: Git history unavailable)";
+                }
+                
+                const weight = node.weight;
+                tWeight.textContent = `${weight}%`;
+                tWeightBar.style.width = `${weight}%`;
+                
+                if (weight > 70) {
+                    tWeightBar.className = 'bg-neonRed h-full rounded';
+                } else if (weight > 35) {
+                    tWeightBar.className = 'bg-neonAmber h-full rounded';
+                } else {
+                    tWeightBar.className = 'bg-[#0078D4] h-full rounded';
+                }
+
+                tooltip.className = tooltip.className.replace('opacity-0 pointer-events-none', 'opacity-100 pointer-events-auto');
+                tooltip.style.transform = 'translateY(0)';
+
+                // Position immediately on the other side of the current pointer
+                positionTooltip(e);
+            });
+
+            // Keep it positioned nicely while moving the mouse over the node (avoids sudden jumps)
+            element.addEventListener('mousemove', (e) => {
+                if (tooltip.style.opacity !== '0' && tooltip.classList.contains('opacity-100')) {
+                    positionTooltip(e);
+                }
+            });
+
+            element.addEventListener('mouseleave', () => {
+                tooltip.className = tooltip.className.replace('opacity-100 pointer-events-auto', 'opacity-0 pointer-events-none');
+                tooltip.style.transform = 'translateY(10px)';
+                // Reset to original static position for next time (optional)
+                tooltip.style.left = '';
+                tooltip.style.top = '';
+                tooltip.style.bottom = '';
+                tooltip.style.right = '';
+            });
+
+            // Support click on node to show/position the file profile dialogue box
+            element.addEventListener('click', (e) => {
+                e.stopPropagation();
+                tFile.textContent = node.id;
+                tClasses.textContent = node.classes !== undefined ? node.classes : "--";
+                tFunctions.textContent = node.complexity !== undefined ? node.complexity : "--";
+                tImports.textContent = node.imports !== undefined ? node.imports : "--";
+                tImportedBy.textContent = node.imported_by !== undefined ? node.imported_by : "--";
+                
+                if (typeof node.commit_frequency === 'number') {
+                    tCommitFreq.textContent = `${node.commit_frequency} commits`;
+                } else {
+                    tCommitFreq.textContent = node.commit_frequency || "Not Available (Reason: Git history unavailable)";
+                }
+                
+                const weight = node.weight;
+                tWeight.textContent = `${weight}%`;
+                tWeightBar.style.width = `${weight}%`;
+                
+                if (weight > 70) {
+                    tWeightBar.className = 'bg-neonRed h-full rounded';
+                } else if (weight > 35) {
+                    tWeightBar.className = 'bg-neonAmber h-full rounded';
+                } else {
+                    tWeightBar.className = 'bg-[#0078D4] h-full rounded';
+                }
+
+                tooltip.className = tooltip.className.replace('opacity-0 pointer-events-none', 'opacity-100 pointer-events-auto');
+                tooltip.style.transform = 'translateY(0)';
+                positionTooltip(e);
+            });
+
+            // Also support click to show (persistent until click elsewhere or leave area)
+            element.addEventListener('click', (e) => {
+                // If already visible from hover, clicking can re-position or keep it
+                if (tooltip.classList.contains('opacity-100')) {
+                    positionTooltip(e);
+                } else {
+                    // Populate and show on click too
+                    tFile.textContent = node.id;
+                    tClasses.textContent = node.classes !== undefined ? node.classes : "--";
+                    tFunctions.textContent = node.complexity !== undefined ? node.complexity : "--";
+                    tImports.textContent = node.imports !== undefined ? node.imports : "--";
+                    tImportedBy.textContent = node.imported_by !== undefined ? node.imported_by : "--";
+                    
+                    if (typeof node.commit_frequency === 'number') {
+                        tCommitFreq.textContent = `${node.commit_frequency} commits`;
+                    } else {
+                        tCommitFreq.textContent = node.commit_frequency || "Not Available (Reason: Git history unavailable)";
+                    }
+                    
+                    const weight = node.weight;
+                    tWeight.textContent = `${weight}%`;
+                    tWeightBar.style.width = `${weight}%`;
+                    
+                    if (weight > 70) {
+                        tWeightBar.className = 'bg-neonRed h-full rounded';
+                    } else if (weight > 35) {
+                        tWeightBar.className = 'bg-neonAmber h-full rounded';
+                    } else {
+                        tWeightBar.className = 'bg-[#0078D4] h-full rounded';
+                    }
+
+                    tooltip.className = tooltip.className.replace('opacity-0 pointer-events-none', 'opacity-100 pointer-events-auto');
+                    tooltip.style.transform = 'translateY(0)';
+                    positionTooltip(e);
+                }
+            });
+        }
+
+        function setupLineHighlight(nodeElement, index, isStatic) {
+            nodeElement.addEventListener('mouseenter', () => {
+                const line = document.getElementById(`line-node-${index}`);
+                if (line) {
+                    line.style.strokeWidth = isStatic ? "4.5px" : "3.5px";
+                    line.style.strokeOpacity = "0.95";
+                    if (isStatic) {
+                        line.style.filter = "drop-shadow(0 0 10px rgba(0, 120, 212, 0.9))";
+                    } else {
+                        line.style.filter = "drop-shadow(0 0 8px rgba(255, 140, 0, 0.8))";
+                    }
+                }
+            });
+
+            nodeElement.addEventListener('mouseleave', () => {
+                const line = document.getElementById(`line-node-${index}`);
+                if (line) {
+                    line.style.strokeWidth = isStatic ? "2.5px" : "2px";
+                    line.style.strokeOpacity = "0.4";
+                    line.style.filter = "none";
+                }
+            });
+        }
+
+        function setupReportBoxHoverUpdate(nodeElement, filename, relationship, weight) {
+            const reportBox = document.getElementById("aurora-report-box");
+            nodeElement.addEventListener('mouseenter', () => {
+                const isStatic = (relationship === "Direct Import");
+                const accentColor = isStatic ? "text-[#0078D4]" : "text-neonAmber";
+                
+                reportBox.innerHTML = `
+                    <h3 class="text-xs font-bold ${accentColor} mt-3 mb-1.5 uppercase tracking-wider"># CANDIDATE REFAC VECTOR: ${filename}</h3>
+                    <p class="text-emerald-600 mb-2 font-mono">> Inspecting localized blast vectors...</p>
+                    <ul class="list-disc pl-4 space-y-1.5 text-xs text-slate-500 font-sans">
+                        <li><strong class="text-[#201F1E]">Relationship:</strong> ${relationship}</li>
+                        <li><strong class="text-[#201F1E]">Blast Weight:</strong> ${weight}% risk index</li>
+                        <li><strong class="text-[#201F1E]">Structural integrity:</strong> Cascading modifications recommended</li>
+                    </ul>
+                `;
+            });
+
+            nodeElement.addEventListener('mouseleave', () => {
+                reportBox.innerHTML = defaultReportHTML;
+            });
+        }
+
+        // Vanilla JS Pan and Zoom Interaction Engine
+        function setupPanZoom() {
+            const svg = document.getElementById("viewport-canvas");
+            const container = document.getElementById("graph-container");
+            if (!svg || !container) return;
+
+            scale = 1.0;
+            translateX = 0;
+            translateY = 0;
+            isPanning = false;
+
+            const minScale = 0.4;
+            const maxScale = 3.0;
+
+            const updateTransform = () => {
+                container.setAttribute("transform", `translate(${translateX}, ${translateY}) scale(${scale})`);
+            };
+
+            updateTransform();
+
+            svg.addEventListener("mousedown", (e) => {
+                if (e.button !== 0) return;
+                isPanning = true;
+                svg.style.cursor = "grabbing";
+                startX = e.clientX - translateX;
+                startY = e.clientY - translateY;
+            });
+
+            window.addEventListener("mousemove", (e) => {
+                if (!isPanning) return;
+                translateX = e.clientX - startX;
+                translateY = e.clientY - startY;
+                updateTransform();
+            });
+
+            window.addEventListener("mouseup", () => {
+                if (isPanning) {
+                    isPanning = false;
+                    svg.style.cursor = "grab";
+                }
+            });
+
+            svg.addEventListener("wheel", (e) => {
+                e.preventDefault();
+                const zoomIntensity = 0.04;
+                const rect = svg.getBoundingClientRect();
+                
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                const direction = e.deltaY < 0 ? 1 : -1;
+                const zoomFactor = Math.exp(direction * zoomIntensity);
+                
+                const newScale = Math.min(Math.max(scale * zoomFactor, minScale), maxScale);
+                
+                translateX = mouseX - (mouseX - translateX) * (newScale / scale);
+                translateY = mouseY - (mouseY - translateY) * (newScale / scale);
+                scale = newScale;
+                
+                updateTransform();
+            });
+        }
+
+        // Fullscreen / Maximised view for the Impact Intelligence Graph
+        let graphFullscreen = false;
+
+        function toggleGraphFullscreen() {
+            const card = document.getElementById('impact-graph-card');
+            if (!card) return;
+
+            graphFullscreen = !graphFullscreen;
+
+            if (graphFullscreen) {
+                card.classList.add('graph-fullscreen');
+                // Update button text if we can find it
+                const btns = card.querySelectorAll('button');
+                btns.forEach(b => {
+                    if (b.textContent.includes('Fullscreen')) b.textContent = '✕ Exit';
+                });
+                // Optional: enter browser fullscreen for even more immersion
+                // if (card.requestFullscreen) card.requestFullscreen().catch(()=>{});
+            } else {
+                card.classList.remove('graph-fullscreen');
+                const btns = card.querySelectorAll('button');
+                btns.forEach(b => {
+                    if (b.textContent.includes('Exit')) b.textContent = '⛶ Fullscreen';
+                });
+                // if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+            }
+
+            // Re-setup pan/zoom after layout change
+            setTimeout(() => {
+                if (typeof setupPanZoom === 'function') setupPanZoom();
+            }, 50);
+        }
+
+        // Allow Esc key to exit graph fullscreen
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && graphFullscreen) {
+                const card = document.getElementById('impact-graph-card');
+                if (card) {
+                    card.classList.remove('graph-fullscreen');
+                    graphFullscreen = false;
+                    const btns = card.querySelectorAll('button');
+                    btns.forEach(b => {
+                        if (b.textContent.includes('Exit')) b.textContent = '⛶ Fullscreen';
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>

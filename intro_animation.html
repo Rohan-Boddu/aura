@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatIf AI – Predictive Counterfactual Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #F8F9FA;
+            font-family: 'Space Grotesk', sans-serif;
+            user-select: none;
+        }
+
+        /* Neural canvas: always behind everything */
+        #neural-canvas {
+            position: fixed;
+            inset: 0; width: 100%; height: 100%;
+            z-index: 0; opacity: 0;
+            pointer-events: none;
+        }
+
+        #scene {
+            position: relative; z-index: 1;
+            width: 100vw; height: 100vh;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+
+        /*
+         * #motion-wrapper is the ONLY element that receives the
+         * global antigravity y/x drift. All SVG ring rotations
+         * use svgOrigin:"500 430" — fully decoupled.
+         */
+        #motion-wrapper {
+            display: flex; flex-direction: column;
+            align-items: center;
+            width: min(575px, 84vw);
+            opacity: 0;
+        }
+
+        #emblem-svg {
+            width: 100%; height: auto;
+            display: block; overflow: visible;
+        }
+
+        /* ── Light Theme Typography ─────────────────────── */
+        .brand-text {
+            font-size: clamp(1.8rem, 4.4vw, 2.9rem);
+            font-weight: 700; letter-spacing: 0.1em;
+            color: #1E293B;                  /* dark slate */
+            text-align: center; line-height: 1;
+            opacity: 0; margin-top: 0.9rem;
+        }
+        .brand-ai {
+            color: transparent;
+            background: linear-gradient(90deg, #00A8D6, #0060C0);
+            -webkit-background-clip: text; background-clip: text;
+            margin-left: 0.15em;
+            filter: drop-shadow(0 1px 3px rgba(0,60,120,0.20));
+        }
+        .tagline-text {
+            margin-top: 0.52rem;
+            font-size: clamp(0.56rem, 0.98vw, 0.70rem);
+            font-weight: 500; letter-spacing: 0.26em;
+            color: #64748B;                  /* medium slate */
+            text-transform: uppercase;
+            text-align: center; opacity: 0;
+        }
+
+        /* Premium Spinner Container replaces workspace button */
+        .spinner-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1.80rem;
+            opacity: 0;
+        }
+        .premium-spinner {
+            animation: rotate-spinner 2s linear infinite;
+            width: 34px; height: 34px;
+        }
+        .premium-spinner .path {
+            stroke: #0056B3;
+            stroke-linecap: round;
+            animation: dash-spinner 1.5s ease-in-out infinite;
+        }
+        .spinner-text {
+            margin-top: 0.82rem;
+            font-size: 0.64rem; font-weight: 600;
+            letter-spacing: 0.24em; color: #64748B;
+            text-transform: uppercase;
+            font-family: 'Space Grotesk', sans-serif;
+            min-height: 1.2rem; text-align: center;
+        }
+        @keyframes rotate-spinner {
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes dash-spinner {
+            0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+            50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+            100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="neural-canvas"></canvas>
+
+<div id="scene">
+  <div id="motion-wrapper">
+
+    <!--
+    ╔══════════════════════════════════════════════════════════╗
+    ║  SVG viewBox = "0 0 1000 900"                           ║
+    ║  Ring centre = (500, 430)  |  Radii: 210 | 155 | 100   ║
+    ║                                                          ║
+    ║  PAINT ORDER (back → front):                            ║
+    ║   1  .rings-group        orange concentric ring HUD     ║
+    ║   2  .crescent-inner     corporate-blue left arc 7→11   ║
+    ║   3  .crescent-outer     corporate-blue accent 9→1      ║
+    ║   4  .core-symbol-group  6-node decision tree (exact)   ║
+    ║   5  .slash-group        ink-blue curved blade          ║
+    ║   6  .arc-group          radar oscillation arc          ║
+    ╚══════════════════════════════════════════════════════════╝
+    -->
+    <svg id="emblem-svg" viewBox="0 0 1000 900">
+      <defs>
+
+        <!--
+          id="slash-gradient" — referenced by the user-specified slash path.
+          Deep corporate blue core → lighter cyan at the tips,
+          fading to transparent so the ends dissolve cleanly.
+          Gradient direction matches the path: bottom-left → top-right.
+        -->
+        <linearGradient id="slash-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#0056B3" stop-opacity="0.00"/>
+          <stop offset="22%"  stop-color="#0056B3" stop-opacity="0.95"/>
+          <stop offset="55%"  stop-color="#0078D4" stop-opacity="1.00"/>
+          <stop offset="80%"  stop-color="#00A8D6" stop-opacity="0.92"/>
+          <stop offset="100%" stop-color="#00C2F0" stop-opacity="0.00"/>
+        </linearGradient>
+
+        <!-- Inner crescent: fades at top/bottom arc tips -->
+        <linearGradient id="g-ci" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stop-color="#0056B3" stop-opacity="0.00"/>
+          <stop offset="20%"  stop-color="#0056B3" stop-opacity="1.00"/>
+          <stop offset="80%"  stop-color="#0056B3" stop-opacity="1.00"/>
+          <stop offset="100%" stop-color="#0056B3" stop-opacity="0.00"/>
+        </linearGradient>
+
+        <!-- Outer crescent accent: fades left→right -->
+        <linearGradient id="g-co" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#0056B3" stop-opacity="0.00"/>
+          <stop offset="18%"  stop-color="#0078D4" stop-opacity="0.70"/>
+          <stop offset="55%"  stop-color="#0078D4" stop-opacity="0.70"/>
+          <stop offset="100%" stop-color="#0056B3" stop-opacity="0.00"/>
+        </linearGradient>
+
+        <!-- ── Filters (all feDropShadow — no neon glow) ─── -->
+
+        <!-- Heavy blue drop-shadow: inner crescent depth halo -->
+        <filter id="f-cyan-heavy" x="-22%" y="-22%" width="144%" height="144%">
+          <feDropShadow dx="0" dy="4" stdDeviation="7"
+                        flood-color="#0056B3" flood-opacity="0.20"/>
+        </filter>
+
+        <!-- Medium blue drop-shadow: crescent body + radar arc -->
+        <filter id="f-cyan" x="-16%" y="-16%" width="132%" height="132%">
+          <feDropShadow dx="0" dy="2" stdDeviation="4"
+                        flood-color="#0056B3" flood-opacity="0.16"/>
+        </filter>
+
+        <!-- Soft blue drop-shadow: secondary elements -->
+        <filter id="f-soft" x="-12%" y="-12%" width="124%" height="124%">
+          <feDropShadow dx="0" dy="1" stdDeviation="2.5"
+                        flood-color="#0056B3" flood-opacity="0.12"/>
+        </filter>
+
+        <!-- Ink-blue drop-shadow: slash depth -->
+        <filter id="f-slash" x="-14%" y="-14%" width="128%" height="128%">
+          <feDropShadow dx="0" dy="3" stdDeviation="5"
+                        flood-color="#0044A0" flood-opacity="0.26"/>
+        </filter>
+
+        <!-- Orange drop-shadow: ring junction nodes -->
+        <filter id="f-orange" x="-25%" y="-25%" width="150%" height="150%">
+          <feDropShadow dx="0" dy="2" stdDeviation="4"
+                        flood-color="#E65C00" flood-opacity="0.26"/>
+        </filter>
+
+        <!-- Subtle spoke ambient -->
+        <filter id="f-spoke" x="-6%" y="-6%" width="112%" height="112%">
+          <feDropShadow dx="0" dy="1" stdDeviation="1.2"
+                        flood-color="#FF8C00" flood-opacity="0.16"/>
+        </filter>
+
+      </defs>
+
+
+      <!-- ════════════════════════════════════════════════════
+           PAINT LAYER 1 — THREE VOLUMETRIC ORANGE RINGS
+           Richer #FFB300–#FFC107 palette: stays vibrant on white.
+           All coordinates unchanged from locked geometry.
+           ════════════════════════════════════════════════════ -->
+      <g class="rings-group">
+
+        <!-- OUTER r=210 -->
+        <circle cx="500" cy="430" r="210" fill="none"
+                stroke="#FF8C00" stroke-width="28" stroke-opacity="0.09"/>
+        <circle cx="500" cy="430" r="210" fill="none"
+                stroke="#FFB300" stroke-width="11" stroke-opacity="0.28"/>
+        <circle cx="500" cy="430" r="210" fill="none"
+                stroke="#FFC107" stroke-width="1.8" stroke-opacity="0.90"/>
+
+        <!-- MIDDLE r=155 -->
+        <circle cx="500" cy="430" r="155" fill="none"
+                stroke="#FF8C00" stroke-width="20" stroke-opacity="0.11"/>
+        <circle cx="500" cy="430" r="155" fill="none"
+                stroke="#FFB300" stroke-width="8.5" stroke-opacity="0.30"/>
+        <circle cx="500" cy="430" r="155" fill="none"
+                stroke="#FFC107" stroke-width="1.8" stroke-opacity="0.92"/>
+
+        <!-- INNER r=100 -->
+        <circle cx="500" cy="430" r="100" fill="none"
+                stroke="#FF8C00" stroke-width="13" stroke-opacity="0.13"/>
+        <circle cx="500" cy="430" r="100" fill="none"
+                stroke="#FFB300" stroke-width="5.5" stroke-opacity="0.34"/>
+        <circle cx="500" cy="430" r="100" fill="none"
+                stroke="#FFC107" stroke-width="1.9" stroke-opacity="0.95"/>
+
+        <!-- SPOKES: H | 60° | 120° axes from (500,430) to r=210 -->
+        <g filter="url(#f-spoke)">
+          <line x1="290" y1="430" x2="710" y2="430"
+                stroke="#FF9800" stroke-width="0.85" stroke-opacity="0.30"/>
+          <line x1="395" y1="248" x2="605" y2="612"
+                stroke="#FF9800" stroke-width="0.85" stroke-opacity="0.30"/>
+          <line x1="605" y1="248" x2="395" y2="612"
+                stroke="#FF9800" stroke-width="0.85" stroke-opacity="0.30"/>
+        </g>
+
+        <!-- JUNCTION NODES — solid amber/orange on white -->
+        <g filter="url(#f-orange)">
+          <!-- outer r=210 -->
+          <circle cx="710" cy="430" r="5.8" fill="#FFB300" class="jnode"/>
+          <circle cx="290" cy="430" r="5.8" fill="#FFB300" class="jnode"/>
+          <circle cx="605" cy="248" r="5.8" fill="#FFB300" class="jnode"/>
+          <circle cx="395" cy="612" r="5.8" fill="#FFB300" class="jnode"/>
+          <circle cx="395" cy="248" r="5.8" fill="#FFB300" class="jnode"/>
+          <circle cx="605" cy="612" r="5.8" fill="#FFB300" class="jnode"/>
+          <!-- middle r=155 -->
+          <circle cx="655" cy="430" r="4.5" fill="#FF8C00" class="jnode"/>
+          <circle cx="345" cy="430" r="4.5" fill="#FF8C00" class="jnode"/>
+          <circle cx="578" cy="296" r="4.5" fill="#FF8C00" class="jnode"/>
+          <circle cx="422" cy="564" r="4.5" fill="#FF8C00" class="jnode"/>
+          <circle cx="422" cy="296" r="4.5" fill="#FF8C00" class="jnode"/>
+          <circle cx="578" cy="564" r="4.5" fill="#FF8C00" class="jnode"/>
+          <!-- inner r=100 -->
+          <circle cx="600" cy="430" r="3.5" fill="#FFA726" class="jnode"/>
+          <circle cx="400" cy="430" r="3.5" fill="#FFA726" class="jnode"/>
+          <circle cx="550" cy="344" r="3.5" fill="#FFA726" class="jnode"/>
+          <circle cx="450" cy="516" r="3.5" fill="#FFA726" class="jnode"/>
+          <circle cx="450" cy="344" r="3.5" fill="#FFA726" class="jnode"/>
+          <circle cx="550" cy="516" r="3.5" fill="#FFA726" class="jnode"/>
+        </g>
+
+        <!-- CCW inner dashed tracker ring -->
+        <g class="inner-dash-group">
+          <circle cx="500" cy="430" r="127"
+                  stroke="#FF8C00" stroke-width="1.4"
+                  stroke-opacity="0.40" stroke-dasharray="11 9" fill="none"/>
+        </g>
+
+      </g><!-- /PAINT LAYER 1 -->
+
+
+      <!-- ════════════════════════════════════════════════════
+           PAINT LAYER 2 — INNER THICK CRESCENT  (7→11 o'clock)
+           r=125 from centre (500,430)
+             7  o'clock = SVG 120° → (438, 538)
+            11  o'clock = SVG 240° → (438, 322)
+           CW 120° arc | large-arc=0 sweep=1
+           ════════════════════════════════════════════════════ -->
+      <g class="crescent-inner-group" opacity="0">
+        <!-- Depth shadow halo -->
+        <path d="M 438,538 A 125,125 0 0,1 438,322"
+              stroke="url(#g-ci)" stroke-width="18"
+              stroke-linecap="round" fill="none"
+              filter="url(#f-cyan-heavy)" opacity="0.20"
+              class="dc-inner"/>
+        <!-- Main body -->
+        <path d="M 438,538 A 125,125 0 0,1 438,322"
+              stroke="url(#g-ci)" stroke-width="9"
+              stroke-linecap="round" fill="none"
+              filter="url(#f-cyan)" opacity="0.65"
+              class="dc-inner"/>
+        <!-- Crisp core line -->
+        <path d="M 438,538 A 125,125 0 0,1 438,322"
+              stroke="url(#g-ci)" stroke-width="3"
+              stroke-linecap="round" fill="none"
+              class="dc-inner"/>
+      </g><!-- /PAINT LAYER 2 -->
+
+
+      <!-- ════════════════════════════════════════════════════
+           PAINT LAYER 3 — OUTER THIN ACCENT  (9→1 o'clock)
+           r=236 from centre (500,430)
+             9 o'clock = SVG 180° → (264, 430)
+             1 o'clock = SVG 300° → (618, 226)
+           CW 120° arc through top | large-arc=0 sweep=1
+           ════════════════════════════════════════════════════ -->
+      <g class="crescent-outer-group" opacity="0">
+        <path d="M 264,430 A 236,236 0 0,1 618,226"
+              stroke="url(#g-co)" stroke-width="8"
+              stroke-linecap="round" fill="none"
+              filter="url(#f-soft)" opacity="0.28"
+              class="dc-outer"/>
+        <path d="M 264,430 A 236,236 0 0,1 618,226"
+              stroke="url(#g-co)" stroke-width="1.8"
+              stroke-linecap="round" fill="none"
+              class="dc-outer"/>
+      </g><!-- /PAINT LAYER 3 -->
+
+
+      <!-- ════════════════════════════════════════════════════
+           PAINT LAYER 4 — CENTRAL 6-NODE DECISION TREE
+           ────────────────────────────────────────────────────
+           Exact hardcoded SVG block injected verbatim.
+           Solid #0056B3 strokes — no gradients, no glow filters.
+
+           5 connecting lines (every node is attached):
+             ① M 500,320 → 420,380  left diagonal   N1→N2
+             ② M 500,320 → 580,380  right diagonal  N1→N3
+             ③ M 500,320 → 500,440  vertical trunk  N1→N6
+             ④ M 420,380 → 420,440  left drop       N2→N4
+             ⑤ M 580,380 → 580,440  right drop      N3→N5
+
+           6 nodes (white fill, corporate blue border + dot):
+             N1 (500,320)  N2 (420,380)  N3 (580,380)
+             N4 (420,440)  N5 (580,440)  N6 (500,440)
+           ════════════════════════════════════════════════════ -->
+      <!--
+           PAINT LAYER 4 — CENTRAL 6-NODE DECISION TREE
+           ────────────────────────────────────────────────────
+           Exact hardcoded block. Tree centred at (500, 400):
+             vertical midpoint = (340+460)/2 = 400 ✓
+             horizontal spread = 440↔560 symmetric about 500 ✓
+
+           5 connecting lines:
+             ① M 500,340 → 440,400  left diagonal   N1→N2
+             ② M 500,340 → 560,400  right diagonal  N1→N3
+             ③ M 500,340 → 500,460  vertical trunk  N1→N6
+             ④ M 440,400 → 440,460  left drop       N2→N4
+             ⑤ M 560,400 → 560,460  right drop      N3→N5
+
+           6 nodes — every node attached to at least one line:
+             N1 (500,340)  N2 (440,400)  N3 (560,400)
+             N4 (440,460)  N5 (560,460)  N6 (500,460)
+      -->
+      <g class="core-symbol-group" style="transform-origin: 500px 400px;">
+          <!-- ① Left diagonal: N1 → N2 -->
+          <path d="M 500,340 L 440,400" stroke="#0056B3" stroke-width="3.5" stroke-linecap="round" fill="none" class="draw-path" />
+          <!-- ② Right diagonal: N1 → N3 -->
+          <path d="M 500,340 L 560,400" stroke="#0056B3" stroke-width="3.5" stroke-linecap="round" fill="none" class="draw-path" />
+          <!-- ③ Vertical trunk: N1 → N6 -->
+          <path d="M 500,340 L 500,460" stroke="#0056B3" stroke-width="3.5" stroke-linecap="round" fill="none" class="draw-path" />
+          <!-- ④ Left drop: N2 → N4 -->
+          <path d="M 440,400 L 440,460" stroke="#0056B3" stroke-width="3.5" stroke-linecap="round" fill="none" class="draw-path" />
+          <!-- ⑤ Right drop: N3 → N5 -->
+          <path d="M 560,400 L 560,460" stroke="#0056B3" stroke-width="3.5" stroke-linecap="round" fill="none" class="draw-path" />
+
+          <!-- N1: Root — Top Centre (500, 340) -->
+          <circle cx="500" cy="340" r="8" fill="#FFFFFF" stroke="#0056B3" stroke-width="2.5" />
+          <circle cx="500" cy="340" r="3" fill="#0056B3" />
+          <!-- N2: Middle Left (440, 400) -->
+          <circle cx="440" cy="400" r="8" fill="#FFFFFF" stroke="#0056B3" stroke-width="2.5" />
+          <circle cx="440" cy="400" r="3" fill="#0056B3" />
+          <!-- N3: Middle Right (560, 400) -->
+          <circle cx="560" cy="400" r="8" fill="#FFFFFF" stroke="#0056B3" stroke-width="2.5" />
+          <circle cx="560" cy="400" r="3" fill="#0056B3" />
+          <!-- N4: Bottom Left (440, 460) — end of left drop -->
+          <circle cx="440" cy="460" r="8" fill="#FFFFFF" stroke="#0056B3" stroke-width="2.5" />
+          <circle cx="440" cy="460" r="3" fill="#0056B3" />
+          <!-- N5: Bottom Right (560, 460) — end of right drop -->
+          <circle cx="560" cy="460" r="8" fill="#FFFFFF" stroke="#0056B3" stroke-width="2.5" />
+          <circle cx="560" cy="460" r="3" fill="#0056B3" />
+          <!-- N6: Bottom Centre (500, 460) — end of trunk -->
+          <circle cx="500" cy="460" r="8" fill="#FFFFFF" stroke="#0056B3" stroke-width="2.5" />
+          <circle cx="500" cy="460" r="3" fill="#0056B3" />
+      </g><!-- /PAINT LAYER 4 -->
+
+
+      <!-- ════════════════════════════════════════════════════
+           PAINT LAYER 5 — CURVED ENERGY SLASH  (above tree)
+
+           Cubic Bézier — proven visible arc, not a straight line:
+           M 215,768  C 240,480  580,160  785,106
+
+           Midpoint at t=0.5 ≈ (432, 349) vs straight midpoint
+           (500, 437) → 88px displacement = clearly arcing blade.
+
+           3 layers: depth shadow → body glow → razor core.
+           Ink-blue palette: #0056B3 core → #00C2F0 tips (opacity 0).
+           ════════════════════════════════════════════════════ -->
+      <!--
+           PAINT LAYER 5 — CURVED ENERGY SLASH  (above tree)
+           ────────────────────────────────────────────────────
+           Exact user-specified path: Q quadratic Bézier.
+           M 280,580  Q 480,380  720,220
+
+           Control point (480, 380) pulls the curve shallowly
+           toward the upper-left — a fast, sleek slice rather
+           than a bloated arc. Verified displacement at t=0.5:
+             curve midpoint  ≈ (480, 380)
+             straight mid    ≈ (500, 400)
+             → 28px offset — visible but not exaggerated ✓
+      -->
+      <g class="slash-group" opacity="0">
+
+        <!-- Depth shadow layer (same path, wider + filter) -->
+        <path d="M 280,580 Q 480,380 720,220"
+              stroke="url(#slash-gradient)" stroke-width="18"
+              stroke-linecap="round" fill="none"
+              filter="url(#f-slash)" opacity="0.20"
+              class="draw-path-slash"/>
+
+        <!-- The exact user-specified slash path -->
+        <path d="M 280,580 Q 480,380 720,220"
+              stroke="url(#slash-gradient)" stroke-width="8"
+              stroke-linecap="round" fill="none"
+              class="draw-path-slash" />
+
+      </g><!-- /PAINT LAYER 5 -->
+
+
+      <!-- ════════════════════════════════════════════════════
+           PAINT LAYER 6 — OSCILLATING RADAR ARC  (topmost)
+           ════════════════════════════════════════════════════ -->
+      <g class="arc-group" opacity="0">
+        <path d="M 354,558 A 180,180 0 0,1 500,250"
+              stroke="#0056B3" stroke-width="7"
+              stroke-linecap="round" fill="none"
+              filter="url(#f-cyan)"
+              class="draw-arc"/>
+      </g><!-- /PAINT LAYER 6 -->
+
+    </svg><!-- /#emblem-svg -->
+
+    <h1 class="brand-text">WHATIF<span class="brand-ai">AI</span></h1>
+    <p class="tagline-text">Simulate software changes before they happen.</p>
+    
+    <div class="spinner-container">
+        <svg class="premium-spinner" viewBox="0 0 50 50">
+            <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4"></circle>
+        </svg>
+        <div class="spinner-text" id="spinner-status">Ingesting repository...</div>
+    </div>
+
+  </div><!-- /#motion-wrapper -->
+</div><!-- /#scene -->
+
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   GSAP MASTER SEQUENCE & NEURAL NETWORK CANVAS
+   Canvas particles act as a subtle slate-gray watermark.
+   Automatic progress telemetry ingestion redirects to dashboard.
+   ═══════════════════════════════════════════════════════════════ */
+
+(function initNeural() {
+    const canvas = document.getElementById('neural-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+    const dpr = window.devicePixelRatio || 1;
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+        ctx.scale(dpr, dpr);
+    }
+    resize();
+
+    const particles = [];
+    const maxParticles = Math.min(80, Math.floor((width * height) / 15000));
+    const connectionDist = 120;
+    const baseSpeed = 0.45;
+
+    class Particle {
+        constructor() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            this.vx = (Math.random() - 0.5) * baseSpeed;
+            this.vy = (Math.random() - 0.5) * baseSpeed;
+            this.radius = Math.random() * 1.5 + 1.2;
+            this.alpha = Math.random() * 0.5 + 0.3;
+        }
+
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+
+            // Boundary collision
+            if (this.x < 0 || this.x > width) this.vx = -this.vx;
+            if (this.y < 0 || this.y > height) this.vy = -this.vy;
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(203, 213, 225, ${this.alpha})`; // Slate watermark gray
+            ctx.fill();
+        }
+    }
+
+    for (let i = 0; i < maxParticles; i++) {
+        particles.push(new Particle());
+    }
+
+    const mouse = { x: null, y: null, radius: 140 };
+
+    window.addEventListener('mousemove', (e) => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+    });
+
+    window.addEventListener('mouseleave', () => {
+        mouse.x = null;
+        mouse.y = null;
+    });
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+
+        // Update and draw connections
+        for (let i = 0; i < particles.length; i++) {
+            const p1 = particles[i];
+            
+            // Mouse interaction (gentle attraction/repulsion + connection)
+            if (mouse.x !== null && mouse.y !== null) {
+                const dx = p1.x - mouse.x;
+                const dy = p1.y - mouse.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < mouse.radius) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = `rgba(0, 86, 179, ${(1 - dist / mouse.radius) * 0.12})`;
+                    ctx.lineWidth = 0.6;
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(mouse.x, mouse.y);
+                    ctx.stroke();
+
+                    // Gentle push
+                    const force = (mouse.radius - dist) / mouse.radius;
+                    p1.vx += (dx / dist) * force * 0.03;
+                    p1.vy += (dy / dist) * force * 0.03;
+                }
+            }
+
+            p1.update();
+
+            // Clamp particle speed
+            const speed = Math.sqrt(p1.vx * p1.vx + p1.vy * p1.vy);
+            if (speed > baseSpeed * 1.8) {
+                p1.vx = (p1.vx / speed) * baseSpeed * 1.8;
+                p1.vy = (p1.vy / speed) * baseSpeed * 1.8;
+            }
+            // Add slight friction to decelerate back to base speed
+            p1.vx *= 0.98;
+            p1.vy *= 0.98;
+
+            p1.draw();
+
+            for (let j = i + 1; j < particles.length; j++) {
+                const p2 = particles[j];
+                const dx = p1.x - p2.x;
+                const dy = p1.y - p2.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < connectionDist) {
+                    const alpha = (1 - dist / connectionDist) * 0.35;
+                    ctx.beginPath();
+                    ctx.strokeStyle = `rgba(226, 232, 240, ${alpha})`;
+                    ctx.lineWidth = 0.75;
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', () => {
+        resize();
+        const newCount = Math.min(80, Math.floor((width * height) / 15000));
+        while(particles.length < newCount) {
+            particles.push(new Particle());
+        }
+        if (particles.length > newCount) {
+            particles.length = newCount;
+        }
+    });
+
+    animate();
+})();
+
+document.addEventListener('DOMContentLoaded', () => {
+
+    /* strokeDashoffset setup for longer curved paths only.
+       Tree paths (.draw-path) use opacity animation. */
+    ['draw-path-slash', 'dc-inner', 'dc-outer', 'draw-arc'].forEach(cls => {
+        document.querySelectorAll(`.${cls}`).forEach(el => {
+            const L = el.getTotalLength();
+            el.style.strokeDasharray  = L;
+            el.style.strokeDashoffset = L;
+        });
+    });
+
+    /* ── Initial hidden states ── */
+    gsap.set('#motion-wrapper',       { opacity: 0, scale: 0.90 });
+    gsap.set('.core-symbol-group',    { opacity: 0 });
+    gsap.set('.rings-group',          { scale: 0, svgOrigin: '500 430' });
+    gsap.set('.jnode',                { scale: 0 });
+    gsap.set('.slash-group',          { opacity: 0 });
+    gsap.set('.crescent-inner-group', { opacity: 0 });
+    gsap.set('.crescent-outer-group', { opacity: 0 });
+    gsap.set('.arc-group',            { opacity: 0 });
+    gsap.set('.spinner-container',    { opacity: 0 });
+
+    const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+
+    /* ── PHASE 1 — Wrapper rises + tree fades in ── */
+    tl.to('#motion-wrapper', { opacity: 1, scale: 1, duration: 1.8 }, 0.10);
+    tl.to('.core-symbol-group', { opacity: 1, duration: 0.90, ease: 'power2.inOut' }, 0.40);
+
+    /* ── PHASE 2 — Ring system elastic spring ── */
+    tl.to('.rings-group', {
+        scale: 1, duration: 1.90,
+        ease: 'elastic.out(1, 0.76)',
+        svgOrigin: '500 430'
+    }, 0.80);
+
+    tl.to('.jnode', {
+        scale: 1, duration: 0.38,
+        ease: 'back.out(1.7)',
+        stagger: { amount: 0.50, from: 'center' }
+    }, 1.60);
+
+    /* ── PHASE 3 — Crescents sweep in ── */
+    tl.to('.crescent-inner-group', { opacity: 1, duration: 0.18 }, 1.65);
+    tl.to('.dc-inner', { strokeDashoffset: 0, duration: 1.00, ease: 'power3.out' }, 1.67);
+
+    tl.to('.crescent-outer-group', { opacity: 1, duration: 0.18 }, 1.90);
+    tl.to('.dc-outer', { strokeDashoffset: 0, duration: 0.86, ease: 'power3.out' }, 1.92);
+
+    /* ── PHASE 4 — Curved energy slash streaks across ── */
+    tl.to('.slash-group', { opacity: 1, duration: 0.05 }, 1.22);
+    tl.to('.draw-path-slash', { strokeDashoffset: 0, duration: 0.76, ease: 'power4.out' }, 1.24);
+
+    /* ── PHASE 5 — Radar arc ── */
+    tl.to('.arc-group', { opacity: 1, duration: 0.20 }, 2.06);
+    tl.to('.draw-arc', { strokeDashoffset: 0, duration: 0.88, ease: 'power3.out' }, 2.08);
+
+    /* ── PHASE 6 — Typography ── */
+    tl.fromTo('.brand-text',
+        { opacity: 0, y: 14, letterSpacing: '0.02em' },
+        { opacity: 1, y: 0,  letterSpacing: '0.1em', duration: 1.0, ease: 'power4.out' }, 2.14);
+
+    tl.fromTo('.tagline-text',
+        { opacity: 0, y: 8 },
+        { opacity: 1, y: 0, duration: 0.85, ease: 'power3.out' }, 2.46);
+
+    /* Fade in the premium loading spinner instead of the button */
+    tl.to('.spinner-container', { opacity: 1, duration: 0.85 }, 2.72);
+
+    /* Fade in neural canvas watermark */
+    gsap.to('#neural-canvas', { opacity: 0.75, duration: 2.5, ease: 'power1.inOut' });
+
+    /* ── TELEMETRY PROGRESS & REDIRECT STAGES ── */
+    const statusEl = document.getElementById('spinner-status');
+    
+    gsap.delayedCall(4.0, () => {
+        if (statusEl) statusEl.textContent = "Mapping AST dependencies...";
+    });
+
+    gsap.delayedCall(5.3, () => {
+        if (statusEl) statusEl.textContent = "Analyzing commit co-changes...";
+    });
+
+    gsap.delayedCall(6.6, () => {
+        if (statusEl) statusEl.textContent = "Launching Chronos Engine...";
+    });
+
+    // Elegant fade out transition before redirect
+    gsap.delayedCall(7.8, () => {
+        gsap.to('#motion-wrapper', { opacity: 0, scale: 0.95, duration: 0.8, ease: 'power2.inOut' });
+        gsap.to('#neural-canvas', { opacity: 0, duration: 0.8, ease: 'power2.inOut' });
+    });
+
+    // Final dashboard load
+    gsap.delayedCall(8.6, () => {
+        window.location.href = "dashboard_mockup.html";
+    });
+
+    /* ═══════════════════════════════════════════════════════════
+       PERSISTENT IDLE LOOPS
+       ═══════════════════════════════════════════════════════════ */
+
+    /* Whole ring HUD: slow CW rotation */
+    gsap.to('.rings-group', {
+        rotation: 360, svgOrigin: '500 430',
+        duration: 54, repeat: -1, ease: 'none'
+    });
+
+    /* Inner dashed tracker: fast CCW counter-rotation */
+    gsap.to('.inner-dash-group', {
+        rotation: -360, svgOrigin: '500 430',
+        duration: 22, repeat: -1, ease: 'none'
+    });
+
+    /* Radar arc: oscillating angular sweep */
+    gsap.to('.arc-group', {
+        rotation: '+=52', svgOrigin: '500 430',
+        duration: 5.2, repeat: -1, yoyo: true, ease: 'sine.inOut'
+    });
+
+    /* Junction nodes: staggered breathing pulse */
+    gsap.to('.jnode', {
+        opacity: 0.38, duration: 2.2, repeat: -1, yoyo: true,
+        ease: 'sine.inOut',
+        stagger: { amount: 1.6, from: 'random' }
+    });
+
+    /* Tree node inner dots: subtle size pulse */
+    gsap.to('.core-symbol-group circle:nth-child(even)', {
+        attr: { r: '+=1.2' }, opacity: 0.72,
+        duration: 2.5, repeat: -1, yoyo: true,
+        ease: 'sine.inOut', stagger: 0.28
+    });
+
+    /* Inner crescent breathe */
+    gsap.to('.crescent-inner-group', {
+        opacity: 0.70, duration: 3.0, repeat: -1, yoyo: true,
+        ease: 'sine.inOut', delay: 2.8
+    });
+
+    /* Outer accent breathe (out of phase) */
+    gsap.to('.crescent-outer-group', {
+        opacity: 0.55, duration: 2.8, repeat: -1, yoyo: true,
+        ease: 'sine.inOut', delay: 3.6
+    });
+
+    /* Slash idle shimmer */
+    gsap.to('.slash-group', {
+        opacity: 0.42, duration: 3.5, repeat: -1, yoyo: true,
+        ease: 'sine.inOut', delay: 2.1
+    });
+
+    /* Global antigravity drift — wrapper div ONLY, never SVG elements */
+    gsap.to('#motion-wrapper', {
+        y: '+=10', x: '+=3.5',
+        duration: 7.5, repeat: -1,
+        yoyo: true, ease: 'sine.inOut'
+    });
+});
+</script>
+</body>
+</html>

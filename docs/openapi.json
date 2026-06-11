@@ -1,0 +1,499 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "AURA 4.0 Agent API",
+    "description": "Architecture Intelligence Layer for AI coding agents. Operates strictly read-only to guide agents with system context, change impact blast radius, and file ownership attribution.",
+    "version": "4.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Local AURA development server"
+    }
+  ],
+  "paths": {
+    "/api/repository_brief/{analysis_id}": {
+      "get": {
+        "summary": "Retrieve repository summary brief",
+        "description": "Provides a high-level project summary, programming language/framework types, entry points, detected databases, major subsystems, and evidence-grounded confidence scores.",
+        "operationId": "getRepositoryBrief",
+        "parameters": [
+          {
+            "name": "analysis_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique UUID of the analyzed repository session.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful retrieval of repository brief",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepositoryBrief"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        }
+      }
+    },
+    "/api/agent_context/{analysis_id}": {
+      "post": {
+        "summary": "Get goal-aware context",
+        "description": "Accepts a natural language implementation goal, mapping it to target files, companion edit targets, subsystems, potential architectural risks, and verification requirements.",
+        "operationId": "getAgentContext",
+        "parameters": [
+          {
+            "name": "analysis_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique UUID of the analyzed repository session.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "goal": {
+                    "type": "string",
+                    "description": "The natural language instruction or change request (e.g., 'Add JWT Authentication')"
+                  }
+                },
+                "required": ["goal"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful retrieval of change context",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentContext"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        }
+      }
+    },
+    "/api/change_impact/{analysis_id}": {
+      "post": {
+        "summary": "Analyze impact blast radius",
+        "description": "Determines the static AST dependencies, temporal Git co-change coupling probabilities, and risk score associated with modifying a specific file.",
+        "operationId": "getChangeImpact",
+        "parameters": [
+          {
+            "name": "analysis_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique UUID of the analyzed repository session.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "The file path relative to the repository root (e.g. 'core/memory.py')"
+                  }
+                },
+                "required": ["file"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful analysis of change blast radius",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeImpact"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        }
+      }
+    },
+    "/api/ownership/{analysis_id}": {
+      "post": {
+        "summary": "Resolve file ownership",
+        "description": "Resolves the subsystem containing a file, related companion files, entry points, and active routing endpoints mapped to the file.",
+        "operationId": "getOwnership",
+        "parameters": [
+          {
+            "name": "analysis_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique UUID of the analyzed repository session.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "The relative file path to analyze"
+                  }
+                },
+                "required": ["file"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful resolution of file ownership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ownership"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RepositoryBrief": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["available", "unavailable"]
+          },
+          "reason": {
+            "type": "string",
+            "description": "Provided if status is unavailable"
+          },
+          "project_type": {
+            "type": "string"
+          },
+          "entry_points": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "major_subsystems": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "files": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "confidence": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "databases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "architectural_risks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvidenceItem"
+            }
+          }
+        }
+      },
+      "AgentContext": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["available", "unavailable"]
+          },
+          "goal": {
+            "type": "string"
+          },
+          "recommended_target": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "subsystem": {
+                "type": "string"
+              },
+              "confidence": {
+                "type": "number"
+              },
+              "reasons": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "candidate_targets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "file": {
+                  "type": "string"
+                },
+                "score": {
+                  "type": "number"
+                },
+                "reasons": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "subsystem": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "subsystems": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "files": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "confidence": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "companion_files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "file": {
+                  "type": "string"
+                },
+                "confidence": {
+                  "type": "number"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "verification": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvidenceItem"
+            }
+          }
+        }
+      },
+      "ChangeImpact": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["available", "unavailable"]
+          },
+          "direct_dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reverse_dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cochange_dependencies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "file": {
+                  "type": "string"
+                },
+                "probability": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "subsystem": {
+            "type": "string"
+          },
+          "risk_score": {
+            "type": "number"
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvidenceItem"
+            }
+          }
+        }
+      },
+      "Ownership": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["available", "unavailable"]
+          },
+          "subsystem": {
+            "type": "string"
+          },
+          "related_files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "entry_points": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "routes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "method": {
+                  "type": "string"
+                },
+                "handler": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "confidence": {
+            "type": "number"
+          }
+        }
+      },
+      "EvidenceItem": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "evidence_type": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

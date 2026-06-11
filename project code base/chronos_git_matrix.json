@@ -1,0 +1,40 @@
+{
+  "database.py": {
+    "jwt.py": 0.33,
+    "auth.py": 0.33,
+    "user_repo.py": 0.67,
+    "product_catalog.py": 0.33
+  },
+  "auth.py": {
+    "database.py": 0.25,
+    "jwt.py": 0.25,
+    "user_repo.py": 0.25,
+    "billing.py": 0.5,
+    "cache.py": 0.25,
+    "session.py": 0.25
+  },
+  "user_repo.py": {
+    "billing.py": 0.5,
+    "auth.py": 0.25,
+    "database.py": 0.5,
+    "product_catalog.py": 0.25,
+    "payment_gateway.py": 0.25
+  },
+  "billing.py": {
+    "user_repo.py": 0.5,
+    "auth.py": 0.5,
+    "payment_gateway.py": 0.5
+  },
+  "cache.py": {
+    "session.py": 1.0,
+    "auth.py": 0.33
+  },
+  "session.py": {
+    "cache.py": 1.0,
+    "auth.py": 0.33
+  },
+  "payment_gateway.py": {
+    "billing.py": 1.0,
+    "user_repo.py": 0.5
+  }
+}

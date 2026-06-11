@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA - Architecture Intelligence for AI Coding Agents</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        neonGreen: '#107C41',
+                        neonAmber: '#FF8C00',
+                        neonBlue: '#0078D4',
+                        terminalBg: '#FFFFFF',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at center, #FFFFFF 0%, #F3F2F1 100%);
+            color: #201F1E;
+        }
+        .mono {
+            font-family: 'Fira Code', monospace;
+        }
+        .terminal-glow {
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.06), inset 0 1px 1px 0 rgba(255, 255, 255, 0.5);
+        }
+        .blinking-cursor::after {
+            content: '|';
+            animation: blink 1.2s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="w-full h-screen overflow-hidden flex flex-col justify-center items-center px-6">
+
+    <!-- Top Branding -->
+    <div class="mb-8 text-center animate-fade-in">
+        <h1 class="text-4xl font-extrabold tracking-widest text-[#0078D4] mb-2 flex items-center justify-center gap-2">
+            AURA
+        </h1>
+        <p class="text-slate-500 text-xs tracking-wider uppercase font-semibold">Architecture Intelligence for AI Coding Agents</p>
+    </div>
+
+    <!-- The Terminal Container (White Acrylic styling) -->
+    <main class="w-full max-w-2xl bg-white border border-[#D2D0CE] rounded-xl terminal-glow backdrop-blur-md overflow-hidden flex flex-col transition-all duration-300">
+        <!-- Terminal Header -->
+        <div class="w-full h-10 bg-[#F3F2F1] border-b border-[#D2D0CE] px-4 flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-full bg-[#F7768E]"></span>
+                <span class="w-3 h-3 rounded-full bg-[#FF8C00]"></span>
+                <span class="w-3 h-3 rounded-full bg-[#107C41]"></span>
+            </div>
+            <div class="text-[10px] mono text-[#605E5C] uppercase tracking-widest">AURA_CORE // SESSION_SETUP</div>
+            <div class="w-12"></div>
+        </div>
+
+        <!-- Terminal Body -->
+        <div class="p-6 flex flex-col gap-6 mono text-xs leading-relaxed text-[#201F1E]">
+            <div>
+                <span class="text-[#0078D4] font-semibold">[INFO]</span> AURA Engine initialized: AST workspace parser + Subsystem clustering + Git temporal co-change scanner.
+                <br>
+                <span class="text-[#107C41] font-semibold">[READY]</span> Awaiting target codebase ingestion to generate intelligence context.
+            </div>
+
+            <!-- Ingestion Input Prompt -->
+            <div class="flex flex-col gap-3 bg-[#F3F2F1]/50 border border-[#D2D0CE] p-4 rounded-lg focus-within:border-purple-500/50 transition-all duration-300">
+                <label for="repo-path" class="text-[#605E5C] text-[10px] uppercase tracking-wider font-semibold">Local Repository Absolute Directory Path</label>
+                <div class="flex items-center gap-3 bg-white border border-[#D2D0CE] rounded-md px-3 py-2 transition-all focus-within:border-[#0078D4]">
+                    <span class="text-[#0078D4] font-bold">$</span>
+                    <input type="text" id="repo-path" placeholder="e.g. D:\projects\my-web-app" 
+                           class="bg-transparent border-none outline-none text-[#201F1E] w-full font-mono placeholder-slate-400 text-xs focus:ring-0">
+                    <button onclick="startIngestion(false)" 
+                            class="bg-gradient-to-r from-[#0078D4] to-purple-600 text-white px-5 py-2 rounded-md text-[10px] uppercase font-extrabold tracking-[0.2em] shadow-[0_4px_15px_rgba(0,120,212,0.25)] hover:shadow-[0_6px_25px_rgba(0,120,212,0.4)] hover:scale-[1.03] duration-300 transition-all flex-shrink-0 outline-none border-none">
+                        ANALYZE
+                    </button>
+                </div>
+            </div>
+
+            <!-- Demo Bypass Banner -->
+            <div class="border border-[#A8B7C7] bg-[#EFF6FC] p-4 rounded-lg flex items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-[#0078D4] font-bold text-[10px] uppercase tracking-wider mb-1">Time Constrained?</h3>
+                    <p class="text-[#605E5C] text-[11px] font-sans">
+                        Load a pre-configured multi-module e-commerce codebase workspace with full historical commits.
+                    </p>
+                </div>
+                <button onclick="startIngestion(true)" 
+                        class="bg-[#201F1E] hover:bg-[#323130] text-white py-2 px-4 rounded-full text-[11px] font-semibold tracking-wide shadow-md hover:scale-[1.03] duration-300 transition-all flex items-center gap-2 flex-shrink-0 select-none cursor-pointer border border-[#D2D0CE]">
+                    <span class="w-5 h-5 rounded-full border border-white/40 flex items-center justify-center text-[10px] bg-white/10">
+                        <svg class="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                        </svg>
+                    </span>
+                    <span>Load Demo</span>
+                </button>
+            </div>
+            
+            <div id="error-banner" class="hidden border border-red-500/20 bg-red-500/5 p-3 rounded text-red-500 text-[11px] font-sans flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                <span id="error-message"></span>
+            </div>
+        </div>
+    </main>
+
+    <footer class="mt-8 text-center text-[#605E5C] text-[10px] tracking-wider mono uppercase">
+        AURA // AI Software Architect Console
+    </footer>
+
+    <!-- Client side API invocation logic -->
+    <script>
+        async function startIngestion(isDemo) {
+            const errorBanner = document.getElementById('error-banner');
+            const errorMessage = document.getElementById('error-message');
+            errorBanner.classList.add('hidden');
+
+            let repoPath = "";
+            if (!isDemo) {
+                repoPath = document.getElementById('repo-path').value.trim();
+                if (!repoPath) {
+                    errorMessage.textContent = "Please specify a valid local directory path or use the demo option.";
+                    errorBanner.classList.remove('hidden');
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch('/api/ingest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        mode: isDemo ? "demo" : "local",
+                        path: repoPath
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server returned code ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (data.analysis_id) {
+                    localStorage.setItem('analysis_id', data.analysis_id);
+                    localStorage.setItem('is_demo', data.is_demo);
+                    window.location.href = '/loading';
+                } else {
+                    throw new Error("Invalid session response received from backend");
+                }
+            } catch (err) {
+                errorMessage.textContent = `Ingestion trigger failed: ${err.message}`;
+                errorBanner.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

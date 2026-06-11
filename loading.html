@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA - Ingesting Repository...</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #F8F9FA;
+            font-family: 'Space Grotesk', sans-serif;
+            user-select: none;
+        }
+
+        #neural-canvas {
+            position: fixed;
+            inset: 0; width: 100%; height: 100%;
+            z-index: 0; opacity: 0;
+            pointer-events: none;
+        }
+
+        #scene {
+            position: relative; z-index: 1;
+            width: 100vw; height: 100vh;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+
+        #motion-wrapper {
+            display: flex; flex-direction: column;
+            align-items: center;
+            width: min(575px, 84vw);
+            opacity: 0;
+        }
+
+        #emblem-svg {
+            width: 100%; height: auto;
+            display: block; overflow: visible;
+        }
+
+        .brand-text {
+            font-size: clamp(1.8rem, 4.4vw, 2.9rem);
+            font-weight: 700; letter-spacing: 0.1em;
+            color: #1E293B;
+            text-align: center; line-height: 1;
+            opacity: 0; margin-top: 0.9rem;
+        }
+        /* .brand-ai removed - no version numbers in branding */
+        .tagline-text {
+            margin-top: 0.52rem;
+            font-size: clamp(0.56rem, 0.98vw, 0.70rem);
+            font-weight: 500; letter-spacing: 0.26em;
+            color: #64748B;
+            text-transform: uppercase;
+            text-align: center; opacity: 0;
+        }
+
+        .spinner-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1.80rem;
+            opacity: 0;
+        }
+        .premium-spinner {
+            animation: rotate-spinner 2s linear infinite;
+            width: 34px; height: 34px;
+        }
+        .premium-spinner .path {
+            stroke: #0056B3;
+            stroke-linecap: round;
+            animation: dash-spinner 1.5s ease-in-out infinite;
+        }
+        .spinner-text {
+            margin-top: 0.82rem;
+            font-size: 0.64rem; font-weight: 600;
+            letter-spacing: 0.24em; color: #64748B;
+            text-transform: uppercase;
+            font-family: 'Space Grotesk', sans-serif;
+            min-height: 1.2rem; text-align: center;
+        }
+        @keyframes rotate-spinner {
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes dash-spinner {
+            0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+            50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+            100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="neural-canvas"></canvas>
+
+<div id="scene">
+  <div id="motion-wrapper">
+    <svg id="emblem-svg" viewBox="0 0 1000 900">
+      <defs>
+        <linearGradient id="slash-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#0056B3" stop-opacity="0.00"/>
+          <stop offset="22%"  stop-color="#0056B3" stop-opacity="0.95"/>
+          <stop offset="55%"  stop-color="#0078D4" stop-opacity="1.00"/>
+          <stop offset="80%"  stop-color="#00A8D6" stop-opacity="0.92"/>
+          <stop offset="100%" stop-color="#00C2F0" stop-opacity="0.00"/>
+        </linearGradient>
+        <linearGradient id="g-ci" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stop-color="#0056B3" stop-opacity="0.00"/>
+          <stop offset="20%"  stop-color="#0056B3" stop-opacity="1.00"/>
+          <stop offset="80%"  stop-color="#0056B3" stop-opacity="1.00"/>
+          <stop offset="100%" stop-color="#0056B3" stop-opacity="0.00"/>
+        </linearGradient>
+        <linearGradient id="g-co" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#0056B3" stop-opacity="0.00"/>
+          <stop offset="18%"  stop-color="#0078D4" stop-opacity="0.70"/>
+          <stop offset="55%"  stop-color="#0078D4" stop-opacity="0.70"/>
+          <stop offset="100%" stop-color="#0056B3" stop-opacity="0.00"/>
+        </linearGradient>
+        <filter id="f-cyan-heavy" x="-22%" y="-22%" width="144%" height="144%">
+          <feDropShadow dx="0" dy="4" stdDeviation="7" flood-color="#0056B3" flood-opacity="0.20"/>
+        </filter>
+        <filter id="f-cyan" x="-16%" y="-16%" width="132%" height="132%">
+          <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0056B3" flood-opacity="0.16"/>
+        </filter>
+        <filter id="f-soft" x="-12%" y="-12%" width="124%" height="124%">
+          <feDropShadow dx="0" dy="1" stdDeviation="2.5" flood-color="#0056B3" flood-opacity="0.12"/>
+        </filter>
+        <filter id="f-slash" x="-14%" y="-14%" width="128%" height="128%">
+          <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0044A0" flood-opacity="0.26"/>
+        </filter>
+        <filter id="f-orange" x="-25%" y="-25%" width="150%" height="150%">
+          <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#E65C00" flood-opacity="0.26"/>
+        </filter>
+        <filter id="f-spoke" x="-6%" y="-6%" width="112%" height="112%">
+          <feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="#FF8C00" flood-opacity="0.16"/>
+        </filter>
+      </defs>
+
+      <!-- RINGS -->
+      <g class="rings-group">
+        <circle cx="500" cy="430" r="210" fill="none" stroke="#FF8C00" stroke-width="28" stroke-opacity="0.09"/>
+        <circle cx="500" cy="430" r="210" fill="none" stroke="#FFB300" stroke-width="11" stroke-opacity="0.28"/>
+        <circle cx="500" cy="430" r="210" fill="none" stroke="#FFC107" stroke-width="1.8" stroke-opacity="0.90"/>
+        <circle cx="500" cy="430" r="155" fill="none" stroke="#FF8C00" stroke-width="20" stroke-opacity="0.11"/>
+        <circle cx="500" cy="430" r="155" fill="none" stroke="#FFB300" stroke-width="8.5" stroke-opacity="0.30"/>
+        <circle cx="500" cy="430" r="155" fill="none" stroke="#FFC107" stroke-width="1.8" stroke-opacity="0.92"/>
+        <circle cx="500" cy="430" r="100" fill="none" stroke="#FF8C00" stroke-width="13" stroke-opacity="0.13"/>
+        <circle cx="500" cy="430" r="100" fill="none" stroke="#FFB300" stroke-width="5.5" stroke-opacity="0.34"/>
+        <circle cx="500" cy="430" r="100" fill="none" stroke="#FFC107" stroke-width="1.9" stroke-opacity="0.95"/>
+        <g filter="url(#f-spoke)">
+          <line x1="290" y1="430" x2="710" y2="430" stroke="#FF9800" stroke-width="0.85" stroke-opacity="0.30"/>
+          <line x1="395" y1="248" x2="605" y2="612" stroke="#FF9800" stroke-width="0.85" stroke-opacity="0.30"/>
+          <line x1="605" y1="248" x2="395" y2="612" stroke="#FF9800" stroke-width="0.85" stroke-opacity="0.30"/>
+        </g>
+        <g filter="url(#f-orange)">
+          <circle cx="710" cy="430" r="5.8" fill="#FFB300" class="jnode"/>
+          <circle cx="290" cy="430" r="5.8" fill="#FFB300" class="jnode"/>
+          <circle cx="605" cy="248" r="5.8" fill="#FFB300" class="jnode"/>
+          <circle cx="395" cy="612" r="5.8" fill="#FFB300" class="jnode"/>
+          <circle cx="395" cy="248" r="5.8" fill="#FFB300" class="jnode"/>
+          <circle cx="605" cy="612" r="5.8" fill="#FFB300" class="jnode"/>
+          <circle cx="655" cy="430" r="4.5" fill="#FF8C00" class="jnode"/>
+          <circle cx="345" cy="430" r="4.5" fill="#FF8C00" class="jnode"/>
+          <circle cx="578" cy="296" r="4.5" fill="#FF8C00" class="jnode"/>
+          <circle cx="422" cy="564" r="4.5" fill="#FF8C00" class="jnode"/>
+          <circle cx="422" cy="296" r="4.5" fill="#FF8C00" class="jnode"/>
+          <circle cx="578" cy="564" r="4.5" fill="#FF8C00" class="jnode"/>
+          <circle cx="600" cy="430" r="3.5" fill="#FFA726" class="jnode"/>
+          <circle cx="400" cy="430" r="3.5" fill="#FFA726" class="jnode"/>
+          <circle cx="550" cy="344" r="3.5" fill="#FFA726" class="jnode"/>
+          <circle cx="450" cy="516" r="3.5" fill="#FFA726" class="jnode"/>
+          <circle cx="450" cy="344" r="3.5" fill="#FFA726" class="jnode"/>
+          <circle cx="550" cy="516" r="3.5" fill="#FFA726" class="jnode"/>
+        </g>
+        <g class="inner-dash-group">
+          <circle cx="500" cy="430" r="127" stroke="#FF8C00" stroke-width="1.4" stroke-opacity="0.40" stroke-dasharray="11 9" fill="none"/>
+        </g>
+      </g>
+
+      <!-- CRESCENT INNER -->
+      <g class="crescent-inner-group" opacity="0">
+        <path d="M 438,538 A 125,125 0 0,1 438,322" stroke="url(#g-ci)" stroke-width="18" stroke-linecap="round" fill="none" filter="url(#f-cyan-heavy)" opacity="0.20" class="dc-inner"/>
+        <path d="M 438,538 A 125,125 0 0,1 438,322" stroke="url(#g-ci)" stroke-width="9" stroke-linecap="round" fill="none" filter="url(#f-cyan)" opacity="0.65" class="dc-inner"/>
+        <path d="M 438,538 A 125,125 0 0,1 438,322" stroke="url(#g-ci)" stroke-width="3" stroke-linecap="round" fill="none" class="dc-inner"/>
+      </g>
+
+      <!-- CRESCENT OUTER -->
+      <g class="crescent-outer-group" opacity="0">
+        <path d="M 264,430 A 236,236 0 0,1 618,226" stroke="url(#g-co)" stroke-width="8" stroke-linecap="round" fill="none" filter="url(#f-soft)" opacity="0.28" class="dc-outer"/>
+        <path d="M 264,430 A 236,236 0 0,1 618,226" stroke="url(#g-co)" stroke-width="1.8" stroke-linecap="round" fill="none" class="dc-outer"/>
+      </g>
+
+      <!-- DECISION TREE -->
+      <g class="core-symbol-group" style="transform-origin: 500px 400px;">
+          <path d="M 500,340 L 440,400" stroke="#0056B3" stroke-width="3.5" stroke-linecap="round" fill="none" class="draw-path" />
+          <path d="M 500,340 L 560,400" stroke="#0056B3" stroke-width="3.5" stroke-linecap="round" fill="none" class="draw-path" />
+          <path d="M 500,340 L 500,460" stroke="#0056B3" stroke-width="3.5" stroke-linecap="round" fill="none" class="draw-path" />
+          <path d="M 440,400 L 440,460" stroke="#0056B3" stroke-width="3.5" stroke-linecap="round" fill="none" class="draw-path" />
+          <path d="M 560,400 L 560,460" stroke="#0056B3" stroke-width="3.5" stroke-linecap="round" fill="none" class="draw-path" />
+          <circle cx="500" cy="340" r="8" fill="#FFFFFF" stroke="#0056B3" stroke-width="2.5" />
+          <circle cx="500" cy="340" r="3" fill="#0056B3" />
+          <circle cx="440" cy="400" r="8" fill="#FFFFFF" stroke="#0056B3" stroke-width="2.5" />
+          <circle cx="440" cy="400" r="3" fill="#0056B3" />
+          <circle cx="560" cy="400" r="8" fill="#FFFFFF" stroke="#0056B3" stroke-width="2.5" />
+          <circle cx="560" cy="400" r="3" fill="#0056B3" />
+          <circle cx="440" cy="460" r="8" fill="#FFFFFF" stroke="#0056B3" stroke-width="2.5" />
+          <circle cx="440" cy="460" r="3" fill="#0056B3" />
+          <circle cx="560" cy="460" r="8" fill="#FFFFFF" stroke="#0056B3" stroke-width="2.5" />
+          <circle cx="560" cy="460" r="3" fill="#0056B3" />
+          <circle cx="500" cy="460" r="8" fill="#FFFFFF" stroke="#0056B3" stroke-width="2.5" />
+          <circle cx="500" cy="460" r="3" fill="#0056B3" />
+      </g>
+
+      <!-- SLASH -->
+      <g class="slash-group" opacity="0">
+        <path d="M 280,580 Q 480,380 720,220" stroke="url(#slash-gradient)" stroke-width="18" stroke-linecap="round" fill="none" filter="url(#f-slash)" opacity="0.20" class="draw-path-slash"/>
+        <path d="M 280,580 Q 480,380 720,220" stroke="url(#slash-gradient)" stroke-width="8" stroke-linecap="round" fill="none" class="draw-path-slash" />
+      </g>
+
+      <!-- RADAR ARC -->
+      <g class="arc-group" opacity="0">
+        <path d="M 354,558 A 180,180 0 0,1 500,250" stroke="#0056B3" stroke-width="7" stroke-linecap="round" fill="none" filter="url(#f-cyan)" class="draw-arc"/>
+      </g>
+    </svg>
+
+    <h1 class="brand-text">AURA</h1>
+    <p class="tagline-text">Architecture Intelligence for AI Coding Agents</p>
+    
+    <div class="spinner-container">
+        <svg class="premium-spinner" viewBox="0 0 50 50">
+            <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4"></circle>
+        </svg>
+        <div class="spinner-text" id="spinner-status">Ingesting repository...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function initNeural() {
+    const canvas = document.getElementById('neural-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    const dpr = window.devicePixelRatio || 1;
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+        ctx.scale(dpr, dpr);
+    }
+    resize();
+
+    const particles = [];
+    const maxParticles = Math.min(80, Math.floor((width * height) / 15000));
+    const connectionDist = 120;
+    const baseSpeed = 0.45;
+
+    class Particle {
+        constructor() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            this.vx = (Math.random() - 0.5) * baseSpeed;
+            this.vy = (Math.random() - 0.5) * baseSpeed;
+            this.radius = Math.random() * 1.5 + 1.2;
+            this.alpha = Math.random() * 0.5 + 0.3;
+        }
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x < 0 || this.x > width) this.vx = -this.vx;
+            if (this.y < 0 || this.y > height) this.vy = -this.vy;
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(203, 213, 225, ${this.alpha})`;
+            ctx.fill();
+        }
+    }
+
+    for (let i = 0; i < maxParticles; i++) {
+        particles.push(new Particle());
+    }
+
+    const mouse = { x: null, y: null, radius: 140 };
+    window.addEventListener('mousemove', (e) => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+    });
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+        for (let i = 0; i < particles.length; i++) {
+            const p1 = particles[i];
+            if (mouse.x !== null && mouse.y !== null) {
+                const dx = p1.x - mouse.x;
+                const dy = p1.y - mouse.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < mouse.radius) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = `rgba(0, 86, 179, ${(1 - dist / mouse.radius) * 0.12})`;
+                    ctx.lineWidth = 0.6;
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(mouse.x, mouse.y);
+                    ctx.stroke();
+
+                    const force = (mouse.radius - dist) / mouse.radius;
+                    p1.vx += (dx / dist) * force * 0.03;
+                    p1.vy += (dy / dist) * force * 0.03;
+                }
+            }
+            p1.update();
+            const speed = Math.sqrt(p1.vx * p1.vx + p1.vy * p1.vy);
+            if (speed > baseSpeed * 1.8) {
+                p1.vx = (p1.vx / speed) * baseSpeed * 1.8;
+                p1.vy = (p1.vy / speed) * baseSpeed * 1.8;
+            }
+            p1.vx *= 0.98;
+            p1.vy *= 0.98;
+            p1.draw();
+
+            for (let j = i + 1; j < particles.length; j++) {
+                const p2 = particles[j];
+                const dx = p1.x - p2.x;
+                const dy = p1.y - p2.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < connectionDist) {
+                    const alpha = (1 - dist / connectionDist) * 0.35;
+                    ctx.beginPath();
+                    ctx.strokeStyle = `rgba(226, 232, 240, ${alpha})`;
+                    ctx.lineWidth = 0.75;
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(animate);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        resize();
+    });
+})();
+
+document.addEventListener('DOMContentLoaded', () => {
+    ['draw-path-slash', 'dc-inner', 'dc-outer', 'draw-arc'].forEach(cls => {
+        document.querySelectorAll(`.${cls}`).forEach(el => {
+            const L = el.getTotalLength();
+            el.style.strokeDasharray  = L;
+            el.style.strokeDashoffset = L;
+        });
+    });
+
+    gsap.set('#motion-wrapper',       { opacity: 0, scale: 0.90 });
+    gsap.set('.core-symbol-group',    { opacity: 0 });
+    gsap.set('.rings-group',          { scale: 0, svgOrigin: '500 430' });
+    gsap.set('.jnode',                { scale: 0 });
+    gsap.set('.slash-group',          { opacity: 0 });
+    gsap.set('.crescent-inner-group', { opacity: 0 });
+    gsap.set('.crescent-outer-group', { opacity: 0 });
+    gsap.set('.arc-group',            { opacity: 0 });
+    gsap.set('.spinner-container',    { opacity: 0 });
+
+    const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+
+    tl.to('#motion-wrapper', { opacity: 1, scale: 1, duration: 1.8 }, 0.10);
+    tl.to('.core-symbol-group', { opacity: 1, duration: 0.90, ease: 'power2.inOut' }, 0.40);
+    tl.to('.rings-group', { scale: 1, duration: 1.90, ease: 'elastic.out(1, 0.76)', svgOrigin: '500 430' }, 0.80);
+    tl.to('.jnode', { scale: 1, duration: 0.38, ease: 'back.out(1.7)', stagger: { amount: 0.50, from: 'center' } }, 1.60);
+    tl.to('.crescent-inner-group', { opacity: 1, duration: 0.18 }, 1.65);
+    tl.to('.dc-inner', { strokeDashoffset: 0, duration: 1.00, ease: 'power3.out' }, 1.67);
+    tl.to('.crescent-outer-group', { opacity: 1, duration: 0.18 }, 1.90);
+    tl.to('.dc-outer', { strokeDashoffset: 0, duration: 0.86, ease: 'power3.out' }, 1.92);
+    tl.to('.slash-group', { opacity: 1, duration: 0.05 }, 1.22);
+    tl.to('.draw-path-slash', { strokeDashoffset: 0, duration: 0.76, ease: 'power4.out' }, 1.24);
+    tl.to('.arc-group', { opacity: 1, duration: 0.20 }, 2.06);
+    tl.to('.draw-arc', { strokeDashoffset: 0, duration: 0.88, ease: 'power3.out' }, 2.08);
+
+    tl.fromTo('.brand-text', { opacity: 0, y: 14, letterSpacing: '0.02em' }, { opacity: 1, y: 0,  letterSpacing: '0.1em', duration: 1.0, ease: 'power4.out' }, 2.14);
+    tl.fromTo('.tagline-text', { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.85, ease: 'power3.out' }, 2.46);
+    tl.to('.spinner-container', { opacity: 1, duration: 0.85 }, 2.72);
+    gsap.to('#neural-canvas', { opacity: 0.75, duration: 2.5, ease: 'power1.inOut' });
+
+    /* Panning & Rotation Loops */
+    gsap.to('.rings-group', { rotation: 360, svgOrigin: '500 430', duration: 54, repeat: -1, ease: 'none' });
+    gsap.to('.inner-dash-group', { rotation: -360, svgOrigin: '500 430', duration: 22, repeat: -1, ease: 'none' });
+    gsap.to('.arc-group', { rotation: '+=52', svgOrigin: '500 430', duration: 5.2, repeat: -1, yoyo: true, ease: 'sine.inOut' });
+    gsap.to('.jnode', { opacity: 0.38, duration: 2.2, repeat: -1, yoyo: true, ease: 'sine.inOut', stagger: { amount: 1.6, from: 'random' } });
+    gsap.to('.core-symbol-group circle:nth-child(even)', { attr: { r: '+=1.2' }, opacity: 0.72, duration: 2.5, repeat: -1, yoyo: true, ease: 'sine.inOut', stagger: 0.28 });
+    gsap.to('.crescent-inner-group', { opacity: 0.70, duration: 3.0, repeat: -1, yoyo: true, ease: 'sine.inOut', delay: 2.8 });
+    gsap.to('.crescent-outer-group', { opacity: 0.55, duration: 2.8, repeat: -1, yoyo: true, ease: 'sine.inOut', delay: 3.6 });
+    gsap.to('.slash-group', { opacity: 0.42, duration: 3.5, repeat: -1, yoyo: true, ease: 'sine.inOut', delay: 2.1 });
+    gsap.to('#motion-wrapper', { y: '+=10', x: '+=3.5', duration: 7.5, repeat: -1, yoyo: true, ease: 'sine.inOut' });
+
+    // --- REAL POLLING & REDIRECT CONTROL ---
+    let analysisComplete = false;
+    let animationDone = false;
+
+    // Minimum animation time to let GSAP render elegantly
+    setTimeout(() => {
+        animationDone = true;
+        checkRedirect();
+    }, 3500);
+
+    const statusEl = document.getElementById('spinner-status');
+    const analysisId = localStorage.getItem('analysis_id');
+
+    if (!analysisId) {
+        window.location.href = '/';
+        return;
+    }
+
+    async function pollStatus() {
+        try {
+            const res = await fetch(`/api/status/${analysisId}`);
+            if (res.status === 404) {
+                localStorage.removeItem('analysis_id');
+                window.location.href = '/';
+                return;
+            }
+            if (!res.ok) throw new Error("Status failed");
+            const data = await res.json();
+
+            // Set current logs message dynamically on screen
+            if (data.logs && data.logs.length > 0) {
+                statusEl.textContent = data.logs[data.logs.length - 1];
+            }
+
+            if (data.status === 'complete') {
+                analysisComplete = true;
+                checkRedirect();
+            } else if (data.status === 'error') {
+                statusEl.textContent = "Scanning failed. Redirecting...";
+                analysisComplete = true;
+                setTimeout(checkRedirect, 1500);
+            } else {
+                setTimeout(pollStatus, 600);
+            }
+        } catch (e) {
+            console.error(e);
+            setTimeout(pollStatus, 1000);
+        }
+    }
+
+    function checkRedirect() {
+        if (analysisComplete && animationDone) {
+            gsap.to('#motion-wrapper', { opacity: 0, scale: 0.95, duration: 0.8, ease: 'power2.inOut' });
+            gsap.to('#neural-canvas', { opacity: 0, duration: 0.8, ease: 'power2.inOut' });
+            setTimeout(() => {
+                window.location.href = "/dashboard";
+            }, 850);
+        }
+    }
+
+    // Start Polling loop
+    pollStatus();
+});
+</script>
+</body>
+</html>
